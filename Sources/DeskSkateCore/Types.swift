@@ -34,8 +34,8 @@ public extension CGVector {
 /// A surface is a segment from `a` to `b`. The solid side is to the RIGHT of a→b and the
 /// outward normal is `(b - a).normalized.perpendicular` (the left-hand side). So a flat floor
 /// runs left→right (normal points up), a quarter pipe rising to the right runs left→right
-/// and up (normal points up-left), and a wall blocking movement to the right runs from its
-/// top down to its bottom (normal points left).
+/// and up (normal points up-left). Walls: the world's left wall runs top→bottom (normal +x,
+/// into the world) and its right wall runs bottom→top (normal −x). Always use `normal`.
 public struct Surface: Equatable {
     public enum Kind: String { case ground, ledge, ramp, rail, wall }
 
