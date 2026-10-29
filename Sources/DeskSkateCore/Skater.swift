@@ -719,11 +719,12 @@ public final class Skater {
             guard u.isFinite else { continue }
             let hp = q0 + (p1 - q0) * u
             let t = (hp - s.a).dot(s.direction)
-            // End slop only when actually coming from above; otherwise rolling off an end
-            // re-lands on the segment just left and the skater freezes there.
             // Coming down from above, half a board hanging past the end still lands (snapped onto
-            // the end). Otherwise no slop: rolling off an end must not re-land on it.
-            let slop: CGFloat = d0 > 0.5 ? Tuning.landingEdgeSlop : -1e-3
+            // the end). Otherwise no slop: rolling off an end must not re-land on the segment just
+            // left (he'd freeze there). Rolling off starts on the line with no downward speed, and
+            // is below the slop's reach by the time it has any.
+            let fromAbove = d0 > 0.5 || (v - s.ownerVelocity).dot(n) < -100
+            let slop: CGFloat = fromAbove ? Tuning.landingEdgeSlop : -1e-3
             guard t >= -slop, t <= s.length + slop else { continue }
             if u < bestU {
                 bestU = u
