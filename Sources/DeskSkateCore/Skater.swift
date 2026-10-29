@@ -14,8 +14,10 @@ public final class Skater {
         public static let pushAccel: CGFloat = 500
         public static let maxPushSpeed: CGFloat = 380
         public static let brakeAccel: CGFloat = 900
-        public static let rollingFriction: CGFloat = 0.4
+        public static let rollingFriction: CGFloat = 0.1
         public static let rollingFrictionConstant: CGFloat = 12
+        /// Arcade gravity on ramps so desktop-sized quarter pipes and kickers are reachable.
+        public static let rampGravityScale: CGFloat = 0.3
         public static let grindFriction: CGFloat = 0.08
         public static let bailFriction: CGFloat = 3
         public static let bailFrictionConstant: CGFloat = 250
@@ -224,7 +226,7 @@ public final class Skater {
 
         // Forces along the tangent.
         let tSign: CGFloat = dir.dx < -1e-6 ? -1 : 1
-        speed += -Tuning.gravity * dir.dy * h
+        speed += -Tuning.gravity * (s.kind == .ramp ? Tuning.rampGravityScale : 1) * dir.dy * h
         let inDir = CGFloat((input.right ? 1 : 0) - (input.left ? 1 : 0)) * tSign
         if currentMode == .rolling && inDir != 0 {
             if speed * inDir >= 0 || abs(speed) < 5 {
@@ -428,6 +430,13 @@ public final class Skater {
         }
 
         let wall = collideWalls(from: p0, to: p1, velocity: v, world: world, h: h)
+        // A wall push can move the feet back over a floor the first sweep missed (diving into a
+        // screen corner), so check the corrected path once more.
+        if wall.hit, let hit = sweep(from: p0, to: wall.position, velocity: wall.velocity, world: world,
+                                     h: h, excluding: nil) {
+            land(on: hit.surface, at: hit.point, velocity: wall.velocity, input: input, bailed: bailed, &events)
+            return
+        }
         state.position = wall.position
         state.velocity = wall.velocity
 
@@ -476,7 +485,10 @@ public final class Skater {
             guard u.isFinite else { continue }
             let hp = q0 + (p1 - q0) * u
             let t = (hp - s.a).dot(s.direction)
-            guard t >= -0.5, t <= s.length + 0.5 else { continue }
+            // End slop only when actually coming from above; otherwise rolling off an end
+            // re-lands on the segment just left and the skater freezes there.
+            let slop: CGFloat = d0 > 0.5 ? 0.5 : -1e-3
+            guard t >= -slop, t <= s.length + slop else { continue }
             if u < bestU {
                 bestU = u
                 let tc = min(max(t, 0), s.length)
@@ -530,14 +542,17 @@ public final class Skater {
         var p = p1
         var vel = v
         var hit = false
-        for s in world.surfaces where s.kind == .wall && s.length > 1e-3 {
+        // Screen walls (no owner) go last so an obstacle wall on the same line can't undo them.
+        let walls = world.surfaces.filter { $0.kind == .wall && $0.length > 1e-3 }
+            .sorted { ($0.ownerID == nil ? 1 : 0) < ($1.ownerID == nil ? 1 : 0) }
+        for s in walls {
             let n = s.normal
             let q0 = p0 + s.ownerVelocity * h
             let d0 = (q0 - s.a).dot(n)
             let d1 = (p - s.a).dot(n)
             let side: CGFloat
             if d0 >= 0 && d1 < 0 { side = 1 }
-            else if !s.oneWay && d0 <= 0 && d1 > 0 { side = -1 }
+            else if !s.oneWay && d0 < 0 && d1 > 0 { side = -1 }
             else { continue }
             let u = d0 / (d0 - d1)
             guard u.isFinite else { continue }

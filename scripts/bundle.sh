@@ -24,5 +24,6 @@ codesign --force --sign - "$APP" >/dev/null
 echo "built $APP"
 if [[ "${1:-}" == "--open" ]]; then
   pkill -x DeskSkate 2>/dev/null || true
+  for _ in $(seq 50); do pgrep -x DeskSkate >/dev/null || break; sleep 0.1; done
   open "$APP"
 fi

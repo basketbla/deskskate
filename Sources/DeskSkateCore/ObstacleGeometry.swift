@@ -58,8 +58,8 @@ public enum ObstacleGeometry {
             result = [Piece(points: [CGPoint(x: inset, y: h), CGPoint(x: w - inset, y: h)],
                             kinds: [.rail], grindable: [true])]
         case .box:
-            result = [Piece(points: [CGPoint(x: 0, y: 0), CGPoint(x: 0.12 * w, y: h),
-                                     CGPoint(x: 0.88 * w, y: h), CGPoint(x: w, y: 0)],
+            result = [Piece(points: [CGPoint(x: 0, y: 0), CGPoint(x: 0.26 * w, y: h),
+                                     CGPoint(x: 0.74 * w, y: h), CGPoint(x: w, y: 0)],
                             kinds: [.ramp, .rail, .ramp], grindable: [false, true, false])]
         }
         return flipped ? result.map { mirror($0, width: w) } : result

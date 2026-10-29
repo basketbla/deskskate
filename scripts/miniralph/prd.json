@@ -109,7 +109,7 @@
         "Sources/DeskSkate/OverlayWindow.swift"
       ],
       "priority": 2,
-      "passes": false,
+      "passes": true,
       "notes": ""
     },
     {
@@ -127,7 +127,7 @@
         "Sources/DeskSkateCore/AutoPilot.swift"
       ],
       "priority": 2,
-      "passes": false,
+      "passes": true,
       "notes": ""
     },
     {
@@ -146,7 +146,7 @@
         "Sources/DeskSkate/ObstacleWindow.swift"
       ],
       "priority": 2,
-      "passes": false,
+      "passes": true,
       "notes": ""
     },
     {
@@ -164,7 +164,7 @@
         "Sources/DeskSkate/ModeController.swift"
       ],
       "priority": 2,
-      "passes": false,
+      "passes": true,
       "notes": ""
     },
     {
@@ -180,7 +180,7 @@
         "Sources/simcheck/main.swift"
       ],
       "priority": 3,
-      "passes": false,
+      "passes": true,
       "notes": ""
     }
   ]
