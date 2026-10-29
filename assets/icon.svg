@@ -1,18 +1,20 @@
 <svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 1024 1024" width="1024" height="1024">
-<!-- DeskSkate app icon: the skater rolling along the top of a document. Source for build/AppIcon.icns. -->
+<!-- DeskSkate app icon: the skater grinding the top edge of a folder. Source for assets/AppIcon.icns. -->
 <defs>
-<linearGradient id="bg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#5BA8F5"/><stop offset="1" stop-color="#2F6FD8"/></linearGradient>
+<linearGradient id="bg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#F8FAFC"/><stop offset="1" stop-color="#E2E8F0"/></linearGradient>
+<linearGradient id="folder" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#7CC0F8"/><stop offset="1" stop-color="#3D8EE6"/></linearGradient>
 <filter id="shadow" x="-10%" y="-10%" width="120%" height="130%"><feDropShadow dx="0" dy="12" stdDeviation="14" flood-color="#000" flood-opacity="0.25"/></filter>
 </defs>
 <rect x="100" y="100" width="824" height="824" rx="185" fill="url(#bg)" filter="url(#shadow)"/>
-<path d="M300,470 L620,470 L724,574 L724,840 Q724,860 704,860 L320,860 Q300,860 300,840 Z" fill="#ffffff" stroke="#1d3f7a" stroke-opacity="0.25" stroke-width="6"/>
-<path d="M620,470 L620,554 Q620,574 640,574 L724,574 Z" fill="#DCE7F7"/>
-<rect x="356" y="620" width="300" height="22" rx="11" fill="#D6DEEA"/>
-<rect x="356" y="672" width="260" height="22" rx="11" fill="#D6DEEA"/>
-<rect x="356" y="724" width="300" height="22" rx="11" fill="#D6DEEA"/>
-<rect x="356" y="776" width="200" height="22" rx="11" fill="#D6DEEA"/>
-<!-- Skater: local units, board centre at (0,0), y down; 1 unit = 5.9px, board centre on the page top (y=470). -->
-<g transform="translate(512 470) scale(5.9)">
+<rect x="100" y="100" width="824" height="824" rx="185" fill="none" stroke="#CBD5E1" stroke-width="4"/>
+<path d="M230,560 L230,522 Q230,500 252,500 L420,500 Q436,500 446,514 L462,540 L772,540 Q794,540 794,562 Z" fill="#5AA7EE"/>
+<rect x="230" y="560" width="564" height="300" rx="30" fill="url(#folder)"/>
+<rect x="230" y="560" width="564" height="10" fill="#A9D6FB"/>
+<g fill="#F59E0B">
+<path d="M488,556 L440,512 L451,509 Z"/><path d="M488,556 L436,540 L441,530 Z"/><path d="M488,556 L466,498 L476,500 Z"/>
+</g>
+<!-- Skater: local units, board centre at (0,0), y down; 1 unit = 5.6px, grinding the folder top (y=560). -->
+<g transform="translate(580 554) rotate(-8) scale(5.6)">
 <g fill="none" stroke-linecap="round" stroke-linejoin="round">
 <g stroke="#ffffff" stroke-width="6.6">
 <path d="M0,-27 L-6,-17 L-8,-7"/><path d="M0,-27 L7,-18 L8,-7"/>
