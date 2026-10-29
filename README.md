@@ -16,6 +16,15 @@ scripts/bundle.sh --open   # builds DeskSkate.app, installs it to /Applications 
 swift run simcheck         # headless physics scenarios
 ```
 
+## Release
+
+```sh
+scripts/release.sh   # universal build, Developer ID signing, notarization, GitHub release v$(cat VERSION)
+pnpm dlx wrangler@4 deploy   # the landing page in site/ → deskskate.rhett.info
+```
+
+Bump `VERSION` first. The landing page links `releases/latest`, so a new release is live at once.
+
 ## Modes
 
 - **Autonomous** (default): the skater cruises, ollies onto ledges, flips off ramps and grinds
