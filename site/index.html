@@ -1,0 +1,341 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>DeskSkate: a tiny skateboarder for your Mac desktop</title>
+<meta name="description" content="DeskSkate is a free Mac menu bar app. A little skateboarder rides the tops of your windows, gets launched when you flick one, and grinds the rails you drop on the desktop.">
+<link rel="canonical" href="https://deskskate.rhett.info/">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="theme-color" content="#ffffff">
+
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="DeskSkate">
+<meta property="og:title" content="DeskSkate: a tiny skateboarder for your Mac desktop">
+<meta property="og:description" content="He rides your windows, grinds rails you drop on the desktop, and gets launched when you flick a window up.">
+<meta property="og:url" content="https://deskskate.rhett.info/">
+<meta property="og:image" content="https://deskskate.rhett.info/demo-poster.jpg">
+<meta property="og:image:width" content="1920">
+<meta property="og:image:height" content="1200">
+<meta property="og:video" content="https://deskskate.rhett.info/demo.mp4">
+<meta property="og:video:type" content="video/mp4">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="DeskSkate: a tiny skateboarder for your Mac desktop">
+<meta name="twitter:description" content="He rides your windows, grinds rails you drop on the desktop, and gets launched when you flick a window up.">
+<meta name="twitter:image" content="https://deskskate.rhett.info/demo-poster.jpg">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@500;700;800;900&display=swap" rel="stylesheet">
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "SoftwareApplication",
+  "name": "DeskSkate",
+  "operatingSystem": "macOS 14 or later",
+  "applicationCategory": "EntertainmentApplication",
+  "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
+  "url": "https://deskskate.rhett.info/",
+  "downloadUrl": "https://github.com/basketbla/deskskate/releases/latest/download/DeskSkate.zip"
+}
+</script>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    { "@type": "Question", "name": "Does DeskSkate need any permissions?",
+      "acceptedAnswer": { "@type": "Answer", "text": "No. Window positions come from the window server, which any app can read. DeskSkate never reads window titles or contents." } },
+    { "@type": "Question", "name": "Why does DeskSkate ask to control Finder?",
+      "acceptedAnswer": { "@type": "Answer", "text": "Only if you turn on Skate on Desktop Icons in the menu. Finder is the only place that knows where your desktop icons sit, so macOS asks you once. Leave it off and nothing is asked." } },
+    { "@type": "Question", "name": "How do I quit DeskSkate?",
+      "acceptedAnswer": { "@type": "Answer", "text": "Click the skateboard in the menu bar and choose Quit DeskSkate, or press Command-Q while that menu is open. Control-Option-H hides the skater without quitting." } },
+    { "@type": "Question", "name": "Which Macs does DeskSkate run on?",
+      "acceptedAnswer": { "@type": "Answer", "text": "Macs with Apple silicon running macOS 14 Sonoma or later." } },
+    { "@type": "Question", "name": "Can I control the skater myself?",
+      "acceptedAnswer": { "@type": "Answer", "text": "Yes. Press Command-Option-S for keyboard mode: arrows to push, Space to ollie, Up to flip, Down to grind. Esc hands him back to autopilot." } }
+  ]
+}
+</script>
+
+<style>
+  :root {
+    --ink: #1d1f24;
+    --muted: #4a5263;
+    --line: #1d1f24;
+    --bg: #ffffff;
+    --band: #f1f4f8;
+    --orange: #ef4b2f;
+    --orange-deep: #c9381f;
+    --blue: #3d8ee6;
+    --sky: #d3e9fd;
+    --sun: #f59e0b;
+    --radius: 22px;
+    --shadow: 5px 5px 0 0 var(--line);
+    --display: "Outfit", ui-rounded, -apple-system, "SF Pro Rounded", system-ui, sans-serif;
+  }
+  * { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    margin: 0; background: var(--bg); color: var(--ink);
+    font: 500 17px/1.6 -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+  a { color: inherit; }
+  .wrap { max-width: 1120px; margin: 0 auto; padding: 0 20px; }
+  h1, h2, h3 { font-family: var(--display); letter-spacing: -0.02em; margin: 0; }
+
+  /* nav */
+  header.nav { display: flex; align-items: center; justify-content: space-between; padding: 20px 0; }
+  .brand { display: flex; align-items: center; gap: 10px; text-decoration: none; font: 800 21px var(--display); letter-spacing: -0.02em; }
+  .brand-mark { width: 40px; height: 40px; display: block; transform: rotate(-4deg); transition: transform .2s; }
+  .brand:hover .brand-mark { transform: rotate(4deg); }
+  .nav-links { display: flex; gap: 6px; font-weight: 700; font-size: 15px; }
+  .nav-links a { text-decoration: none; padding: 6px 12px; border-radius: 999px; transition: background .15s; }
+  .nav-links a:hover { background: var(--band); }
+
+  /* buttons */
+  .btn {
+    display: inline-flex; align-items: center; gap: 10px; text-decoration: none; cursor: pointer;
+    font: 800 17px var(--display); letter-spacing: -0.01em;
+    border: 3px solid var(--line); border-radius: 16px; padding: 14px 24px;
+    box-shadow: var(--shadow); transition: transform .12s, box-shadow .12s, background .12s;
+  }
+  .btn:hover { transform: translate(-2px, -2px); box-shadow: 7px 7px 0 0 var(--line); }
+  .btn:active { transform: translate(2px, 2px); box-shadow: 2px 2px 0 0 var(--line); }
+  .btn-primary { background: var(--orange); color: #fff; }
+  .btn-ghost { background: #fff; }
+  .btn-ghost:hover { background: var(--sky); }
+  .btn-sm { font-size: 15px; padding: 8px 16px; border-radius: 999px; box-shadow: 3px 3px 0 0 var(--line); }
+  .btn-sm:hover { box-shadow: 5px 5px 0 0 var(--line); }
+
+  /* hero */
+  .hero { text-align: center; padding: 40px 0 0; }
+  .tag {
+    display: inline-block; transform: rotate(-2deg); background: var(--sun); border: 3px solid var(--line);
+    border-radius: 999px; padding: 5px 16px; font: 800 13px var(--display); letter-spacing: .08em; text-transform: uppercase;
+    box-shadow: 3px 3px 0 0 var(--line);
+  }
+  .hero h1 { font-size: clamp(42px, 7.4vw, 84px); font-weight: 900; line-height: .98; margin: 26px auto 0; max-width: 900px; }
+  .hero h1 .chip {
+    display: inline-block; transform: rotate(1.5deg); background: var(--sky); border: 3px solid var(--line);
+    border-radius: 18px; padding: 0 .18em; box-shadow: 5px 5px 0 0 var(--line); margin: 0 .06em;
+  }
+  .hero p.lede { max-width: 590px; margin: 24px auto 0; font-size: 19px; color: var(--muted); }
+  .cta-row { display: flex; flex-wrap: wrap; justify-content: center; gap: 16px; margin-top: 32px; }
+  .fine { margin-top: 14px; font-size: 14px; font-weight: 600; color: var(--muted); }
+
+  .stage { position: relative; margin: 56px auto 0; max-width: 1040px; }
+  .video-frame {
+    border: 4px solid var(--line); border-radius: 26px; overflow: hidden; background: #dfe7f4;
+    box-shadow: 10px 10px 0 0 var(--line); aspect-ratio: 16 / 10;
+  }
+  .video-frame video { display: block; width: 100%; height: 100%; object-fit: cover; }
+  .sticker {
+    position: absolute; z-index: 2; border: 3px solid var(--line); border-radius: 999px; padding: 7px 16px;
+    font: 800 15px var(--display); box-shadow: 4px 4px 0 0 var(--line); white-space: nowrap;
+  }
+  .sticker.s2 { bottom: -18px; left: 30px; transform: rotate(-4deg); background: #fff; }
+
+  /* features */
+  .band { background: var(--band); border-top: 3px solid var(--line); border-bottom: 3px solid var(--line); margin-top: 96px; }
+  .section { padding: 84px 0; }
+  .section h2 { font-size: clamp(32px, 4.6vw, 50px); font-weight: 900; line-height: 1.05; max-width: 640px; }
+  .section .sub { color: var(--muted); max-width: 560px; margin: 14px 0 0; }
+  .features { display: grid; gap: 26px; margin-top: 0; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .card {
+    background: #fff; border: 3px solid var(--line); border-radius: var(--radius); padding: 28px;
+    box-shadow: 6px 6px 0 0 var(--line); transition: transform .2s;
+  }
+  .card:nth-child(1) { transform: rotate(-1.2deg); }
+  .card:nth-child(2) { transform: rotate(1deg); }
+  .card:nth-child(3) { transform: rotate(.8deg); }
+  .card:nth-child(4) { transform: rotate(-1deg); }
+  .card:hover { transform: rotate(0) translateY(-4px); }
+  .badge {
+    width: 54px; height: 54px; border: 3px solid var(--line); border-radius: 16px; display: grid; place-items: center;
+    box-shadow: 3px 3px 0 0 var(--line);
+  }
+  .card h3 { font-size: 25px; font-weight: 800; margin-top: 20px; }
+  .card p { margin: 10px 0 0; color: var(--muted); }
+
+  /* controls */
+  .controls-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.25fr); gap: 48px; align-items: start; }
+  table.keys { width: 100%; border-collapse: separate; border-spacing: 0; border: 3px solid var(--line); border-radius: var(--radius); overflow: hidden; box-shadow: 6px 6px 0 0 var(--line); background: #fff; }
+  table.keys td { padding: 12px 18px; border-top: 2px solid #e3e8ef; vertical-align: middle; }
+  table.keys tr:first-child td { border-top: 0; }
+  table.keys td:first-child { white-space: nowrap; width: 1%; }
+  table.keys td:last-child { color: var(--muted); }
+  kbd {
+    display: inline-block; min-width: 30px; text-align: center; font: 700 14px/1 -apple-system, system-ui, sans-serif;
+    padding: 7px 8px; margin-right: 4px; background: #fff; border: 2px solid var(--line); border-radius: 8px;
+    box-shadow: 0 3px 0 0 var(--line);
+  }
+  .mode-note { margin-top: 26px; padding: 20px 22px; border: 3px dashed #b6c2d3; border-radius: 18px; color: var(--muted); }
+  .mode-note strong { color: var(--ink); }
+
+  /* faq */
+  .faq { margin-top: 40px; display: grid; gap: 14px; }
+  details { border: 3px solid var(--line); border-radius: 18px; background: #fff; box-shadow: 4px 4px 0 0 var(--line); }
+  summary { list-style: none; cursor: pointer; padding: 18px 56px 18px 22px; font: 700 19px var(--display); position: relative; }
+  summary::-webkit-details-marker { display: none; }
+  summary::after {
+    content: "+"; position: absolute; right: 18px; top: 50%; transform: translateY(-50%);
+    width: 28px; height: 28px; border: 2px solid var(--line); border-radius: 50%; display: grid; place-items: center;
+    font: 800 18px/1 var(--display); background: var(--sky); transition: transform .2s;
+  }
+  details[open] summary::after { content: "–"; background: var(--sun); }
+  details p { margin: 0; padding: 0 22px 20px; color: var(--muted); }
+
+  /* closing band */
+  .closer {
+    position: relative; overflow: hidden; text-align: center; color: #fff; background: linear-gradient(180deg, #3d8ee6, #2a69c2);
+    border: 4px solid var(--line); border-radius: 40px; padding: 64px 24px; box-shadow: 10px 10px 0 0 var(--line);
+  }
+  .closer h2 { font-size: clamp(32px, 5vw, 54px); font-weight: 900; max-width: 700px; margin: 0 auto; line-height: 1.05; }
+  .closer p { margin: 14px auto 0; max-width: 460px; color: #e6f1fd; font-weight: 600; }
+  .closer .btn { margin-top: 30px; background: var(--sun); color: var(--ink); }
+  .closer .deco { position: absolute; opacity: .9; }
+
+  footer { border-top: 3px solid var(--line); margin-top: 96px; }
+  footer .wrap { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 12px; padding-top: 28px; padding-bottom: 28px; font-size: 14px; color: var(--muted); font-weight: 600; }
+
+  @media (max-width: 760px) {
+    .nav-links { display: none; }
+    .features, .controls-grid { grid-template-columns: minmax(0, 1fr); }
+    .card { transform: none !important; }
+    .stage { margin-top: 44px; }
+    .video-frame { border-width: 3px; border-radius: 18px; box-shadow: 6px 6px 0 0 var(--line); }
+    .sticker { font-size: 13px; padding: 5px 12px; }
+    .sticker.s2 { left: 10px; }
+    .section { padding: 64px 0; }
+    .band { margin-top: 72px; }
+    table.keys td { padding: 10px 12px; }
+    .closer { border-radius: 26px; padding: 48px 20px; box-shadow: 6px 6px 0 0 var(--line); }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    * { transition: none !important; }
+  }
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <header class="nav">
+      <a class="brand" href="#top" aria-label="DeskSkate home">
+        <img class="brand-mark" src="favicon.svg" width="40" height="40" alt="">
+        DeskSkate
+      </a>
+      <nav class="nav-links" aria-label="Sections">
+        <a href="#features">Features</a>
+        <a href="#faq">FAQ</a>
+        <a class="gh-stars" href="https://github.com/basketbla/deskskate" aria-label="DeskSkate on GitHub">
+          <img src="https://img.shields.io/github/stars/basketbla/deskskate?style=social" alt="GitHub stars" height="20">
+        </a>
+      </nav>
+      <a class="btn btn-primary btn-sm" href="https://github.com/basketbla/deskskate/releases/latest/download/DeskSkate.zip" download>Download</a>
+    </header>
+  </div>
+
+  <main id="top">
+    <section class="hero wrap">
+      <h1>A tiny skater on your <span class="chip">windows</span></h1>
+      <p class="lede">DeskSkate lives in your menu bar. He rolls along the tops of your windows, rides them when you drag them, and goes flying when you flick one up.</p>
+      <div class="cta-row">
+        <a class="btn btn-primary" href="https://github.com/basketbla/deskskate/releases/latest/download/DeskSkate.zip" download>
+          <svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12m0 0l-5-5m5 5l5-5M4 20h16" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          Download for Mac
+        </a>
+        <a class="btn btn-ghost" href="https://github.com/basketbla/deskskate">View on GitHub</a>
+      </div>
+      <p class="fine">macOS 14 or later · Apple silicon · No permissions needed</p>
+
+      <div class="stage">
+        <div class="video-frame">
+          <video src="demo.mp4" poster="demo-poster.jpg" autoplay muted loop playsinline preload="auto"
+                 aria-label="The skater cruising across windows, grinding a rail, getting picked up by the cursor and launched off a flicked window"></video>
+        </div>
+      </div>
+    </section>
+
+    <section class="band" id="features">
+      <div class="wrap section">
+        <div class="features">
+          <article class="card">
+            <span class="badge" style="background: var(--sky)">
+              <svg width="30" height="30" viewBox="0 0 32 32" aria-hidden="true"><rect x="4" y="9" width="24" height="17" rx="3" fill="#fff" stroke="#1d1f24" stroke-width="2.4"/><path d="M4 14h24" stroke="#1d1f24" stroke-width="2.4"/><path d="M9 5.5h14" stroke="#1d1f24" stroke-width="2.6" stroke-linecap="round"/></svg>
+            </span>
+            <h3>Rides your windows</h3>
+            <p>He ollies up onto higher windows and drops off the ends. Drag a window and he rides along. Flick it up and stop, and he keeps going.</p>
+          </article>
+          <article class="card">
+            <span class="badge" style="background: var(--orange)">
+              <svg width="30" height="30" viewBox="0 0 32 32" aria-hidden="true"><path d="M8 4.5l15.5 9-7.6 1.7L12.4 23 8 4.5z" fill="#fff" stroke="#1d1f24" stroke-width="2.4" stroke-linejoin="round"/><path d="M20 22c2 1.6 4.8 1.6 7 0" fill="none" stroke="#1d1f24" stroke-width="2.4" stroke-linecap="round"/></svg>
+            </span>
+            <h3>Pick him up</h3>
+            <p>Grab him with the mouse and he dangles, legs pedalling. Let go over a window to drop him on it, or swing and throw.</p>
+          </article>
+          <article class="card">
+            <span class="badge" style="background: var(--sun)">
+              <svg width="30" height="30" viewBox="0 0 32 32" aria-hidden="true"><path d="M3 26h7c6 0 12-6 13-15v-4h5v19H3z" fill="#fff" stroke="#1d1f24" stroke-width="2.4" stroke-linejoin="round"/></svg>
+            </span>
+            <h3>Ramps and rails</h3>
+            <p>Add a quarter pipe, kicker, rail or box from the menu bar and drag it anywhere. Right-click to flip or remove. They stay put between launches.</p>
+          </article>
+          <article class="card">
+            <span class="badge" style="background: #fff">
+              <svg width="30" height="30" viewBox="0 0 32 32" aria-hidden="true"><rect x="3" y="9" width="26" height="15" rx="3" fill="#fff" stroke="#1d1f24" stroke-width="2.4"/><path d="M8 14h2m4 0h2m4 0h2M10 19h12" stroke="#1d1f24" stroke-width="2.4" stroke-linecap="round"/></svg>
+            </span>
+            <h3>Watch him, or drive</h3>
+            <p>By default he skates himself and picks his own lines. Press <kbd>⌘</kbd><kbd>⌥</kbd><kbd>S</kbd> and the keyboard is yours.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section class="wrap section" id="faq" style="padding-top: 0">
+      <h2>FAQ</h2>
+      <div class="faq">
+        <details>
+          <summary>Does DeskSkate need any permissions?</summary>
+          <p>No. Window positions come from the window server, which any app can read. DeskSkate never reads window titles or what's inside them.</p>
+        </details>
+        <details>
+          <summary>Why is it asking to control Finder?</summary>
+          <p>Only if you turn on Skate on Desktop Icons in the menu. Finder is the one place that knows where your desktop icons sit, so macOS asks you once. Leave it off and nothing is asked.</p>
+        </details>
+        <details>
+          <summary>How do I quit it?</summary>
+          <p>Click the skateboard in the menu bar and choose Quit DeskSkate. If you just want him gone for a bit, <kbd>⌃</kbd><kbd>⌥</kbd><kbd>H</kbd> hides him.</p>
+        </details>
+        <details>
+          <summary>Which Macs does it run on?</summary>
+          <p>Macs with Apple silicon on macOS 14 Sonoma or later.</p>
+        </details>
+        <details>
+          <summary>Does it cost anything?</summary>
+          <p>No. It's free, with no account and no ads.</p>
+        </details>
+      </div>
+    </section>
+
+    <section class="wrap">
+      <div class="closer">
+        <svg class="deco" style="left:-14px; bottom:-6px" width="150" height="110" viewBox="0 0 150 110" aria-hidden="true"><path d="M0 110h40c50 0 90-40 98-100h12v100z" fill="#d3e9fd" stroke="#1d1f24" stroke-width="4" stroke-linejoin="round"/></svg>
+        <svg class="deco" style="right:30px; bottom:22px" width="140" height="44" viewBox="0 0 140 44" aria-hidden="true"><rect x="6" y="6" width="128" height="7" rx="3" fill="#f59e0b" stroke="#1d1f24" stroke-width="3"/><path d="M28 13v29M112 13v29" stroke="#1d1f24" stroke-width="4"/></svg>
+        <h2>Give your windows something to do</h2>
+        <p>Free, under a minute to set up, and he'll be on the nearest window before you've opened anything.</p>
+        <a class="btn" href="https://github.com/basketbla/deskskate/releases/latest/download/DeskSkate.zip" download>Download for Mac</a>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="wrap">
+      <span>DeskSkate</span>
+      <span>macOS 14+ · Apple silicon</span>
+    </div>
+  </footer>
+</body>
+</html>

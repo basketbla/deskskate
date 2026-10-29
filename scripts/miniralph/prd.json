@@ -1,7 +1,7 @@
 {
   "project": "DeskSkate",
   "branchName": "miniralph/v1",
-  "description": "A macOS menu bar app that puts a procedurally drawn skateboarder on your desktop. The skater rolls along the top edges of your real windows (read via CGWindowListCopyWindowInfo, no permissions), rides windows you drag, gets launched when you flick one, and falls when you pull one away. Two modes: an autonomous skater that cruises, ollies, flips and grinds on its own, and a keyboard mode where the overlay takes focus and you drive. ⌃⌥S or the menu toggles between them, and Esc hands focus back. You can drop quarter pipes, kickers, rails and boxes on the desktop from the menu and drag them around; the skater uses them.",
+  "description": "A macOS menu bar app that puts a procedurally drawn skateboarder on your desktop. The skater rolls along the top edges of your real windows (read via CGWindowListCopyWindowInfo, no permissions), rides windows you drag, gets launched when you flick one, and falls when you pull one away. Two modes: an autonomous skater that cruises, ollies, flips and grinds on its own, and a keyboard mode where the overlay takes focus and you drive. \u2303\u2325S or the menu toggles between them, and Esc hands focus back. You can drop quarter pipes, kickers, rails and boxes on the desktop from the menu and drag them around; the skater uses them.",
   "notInThisRun": [
     "Skater pushing/nudging real windows (Accessibility API)",
     "Sound effects",
@@ -22,13 +22,16 @@
         "Each screen's visible-frame bottom becomes a two-way .ground surface; outer screen sides with no neighbouring screen become .wall surfaces",
         "Surfaces carry ownerID and ownerVelocity; teleported windows report zero velocity",
         "Tiny windows (<60pt wide or <40pt tall) and slivers of ledge shorter than 24pt are dropped",
-        "ObstacleGeometry.profile returns local polylines: quarter pipe = flat deck + curved transition (≥10 segments) up to near-vertical lip; kicker = straight incline; rail = flat grindable top bar; box = flat grindable top with angled ends",
+        "ObstacleGeometry.profile returns local polylines: quarter pipe = flat deck + curved transition (\u226510 segments) up to near-vertical lip; kicker = straight incline; rail = flat grindable top bar; box = flat grindable top with angled ends",
         "ObstacleGeometry.surfaces returns those as global surfaces with chained endpoints, mirrored when flipped",
         "swift build passes"
       ],
-      "files": ["Sources/DeskSkateCore/SurfaceBuilder.swift", "Sources/DeskSkateCore/ObstacleGeometry.swift"],
+      "files": [
+        "Sources/DeskSkateCore/SurfaceBuilder.swift",
+        "Sources/DeskSkateCore/ObstacleGeometry.swift"
+      ],
       "priority": 1,
-      "passes": false,
+      "passes": true,
       "notes": ""
     },
     {
@@ -37,7 +40,7 @@
       "description": "Rolling along surfaces (slopes, curved ramps, carried by moving windows), ollies, air, landing, flip tricks, grinds, bails, respawn.",
       "acceptanceCriteria": [
         "Rolling follows the surface tangent, continues across chained segments, and leaves the surface at the end of a segment or past vertical on a ramp",
-        "A skater on a moving surface moves with it; leaving it keeps the surface velocity (flick a window up → launched)",
+        "A skater on a moving surface moves with it; leaving it keeps the surface velocity (flick a window up \u2192 launched)",
         "If the surface under the skater disappears (window closed, dragged away), the skater falls",
         "Ollie: hold jump to crouch, release to pop along the surface normal",
         "Landing uses a swept test against one-way surfaces from the normal side; landing with a trick under 1.0 progress or a large board/surface angle is a bail",
@@ -46,10 +49,12 @@
         "Events emitted: ollie, landed, grindStart/End, bail, trickStarted, respawned",
         "swift build passes"
       ],
-      "files": ["Sources/DeskSkateCore/Skater.swift"],
+      "files": [
+        "Sources/DeskSkateCore/Skater.swift"
+      ],
       "priority": 1,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Skater.Tuning public; tricks cycle deterministically; respawn(at:) emits no event; one-way obstacle back walls only block from normal side."
     },
     {
       "id": "US-003",
@@ -57,14 +62,16 @@
       "description": "Poll CGWindowListCopyWindowInfo, convert to AppKit coordinates, track per-window velocity, detect teleports.",
       "acceptanceCriteria": [
         "Only layer-0, on-screen, non-transparent windows from other processes, ordered front to back (zIndex 0 = front)",
-        "Top-left → bottom-left coordinate flip uses the primary screen height",
+        "Top-left \u2192 bottom-left coordinate flip uses the primary screen height",
         "Velocity is smoothed across polls; a jump >400pt in one poll or a resize-heavy jump is flagged teleported with zero velocity",
         "No permissions required (does not read window titles)",
         "swift build passes"
       ],
-      "files": ["Sources/DeskSkate/WindowTracker.swift"],
+      "files": [
+        "Sources/DeskSkate/WindowTracker.swift"
+      ],
       "priority": 1,
-      "passes": false,
+      "passes": true,
       "notes": ""
     },
     {
@@ -78,9 +85,11 @@
         "Effects: grind sparks, landing dust, bail stars",
         "swift build passes"
       ],
-      "files": ["Sources/DeskSkate/SkaterRenderer.swift"],
+      "files": [
+        "Sources/DeskSkate/SkaterRenderer.swift"
+      ],
       "priority": 1,
-      "passes": false,
+      "passes": true,
       "notes": ""
     },
     {
@@ -90,14 +99,17 @@
       "acceptanceCriteria": [
         "Panels: borderless, clear, ignoresMouseEvents, level above obstacles, join all Spaces and fullscreen; rebuilt when screens change",
         "Fixed-timestep physics at 120Hz, rendering at display rate, window poll ~30Hz",
-        "Keyboard mode: overlay panel becomes key and reads ←/→ (A/D) roll, Space hold/release ollie, ↑/F trick, ↓/S grind, R respawn",
+        "Keyboard mode: overlay panel becomes key and reads \u2190/\u2192 (A/D) roll, Space hold/release ollie, \u2191/F trick, \u2193/S grind, R respawn",
         "Debug: AppState.showSurfaces draws all surfaces",
         "Hidden/paused respected",
         "swift build passes"
       ],
-      "files": ["Sources/DeskSkate/GameController.swift", "Sources/DeskSkate/OverlayWindow.swift"],
+      "files": [
+        "Sources/DeskSkate/GameController.swift",
+        "Sources/DeskSkate/OverlayWindow.swift"
+      ],
       "priority": 2,
-      "passes": false,
+      "passes": true,
       "notes": ""
     },
     {
@@ -111,9 +123,11 @@
         "Gets back up after bails without getting stuck; idles briefly sometimes",
         "swift build passes"
       ],
-      "files": ["Sources/DeskSkateCore/AutoPilot.swift"],
+      "files": [
+        "Sources/DeskSkateCore/AutoPilot.swift"
+      ],
       "priority": 2,
-      "passes": false,
+      "passes": true,
       "notes": ""
     },
     {
@@ -127,9 +141,12 @@
         "Positions saved to UserDefaults and restored; restored off-screen obstacles are pulled back on screen",
         "swift build passes"
       ],
-      "files": ["Sources/DeskSkate/ObstacleManager.swift", "Sources/DeskSkate/ObstacleWindow.swift"],
+      "files": [
+        "Sources/DeskSkate/ObstacleManager.swift",
+        "Sources/DeskSkate/ObstacleWindow.swift"
+      ],
       "priority": 2,
-      "passes": false,
+      "passes": true,
       "notes": ""
     },
     {
@@ -137,14 +154,17 @@
       "title": "Menu bar, hotkeys, mode switching",
       "description": "Status item menu and global hotkeys to switch modes, add obstacles, hide, respawn; focus handoff for keyboard mode.",
       "acceptanceCriteria": [
-        "Menu: Autonomous / Keyboard (checkmarked), Add ▸ each obstacle kind, Remove All Obstacles, Respawn Skater, Hide, Show Surfaces, Controls help item, Quit",
-        "⌃⌥S toggles mode, ⌃⌥H hides/shows (Carbon RegisterEventHotKey, no permissions)",
-        "Entering keyboard mode remembers the frontmost app and activates DeskSkate; Esc or ⌃⌥S returns to autonomous and reactivates that app; switching away to another app falls back to autonomous",
+        "Menu: Autonomous / Keyboard (checkmarked), Add \u25b8 each obstacle kind, Remove All Obstacles, Respawn Skater, Hide, Show Surfaces, Controls help item, Quit",
+        "\u2303\u2325S toggles mode, \u2303\u2325H hides/shows (Carbon RegisterEventHotKey, no permissions)",
+        "Entering keyboard mode remembers the frontmost app and activates DeskSkate; Esc or \u2303\u2325S returns to autonomous and reactivates that app; switching away to another app falls back to autonomous",
         "swift build passes"
       ],
-      "files": ["Sources/DeskSkate/StatusMenu.swift", "Sources/DeskSkate/ModeController.swift"],
+      "files": [
+        "Sources/DeskSkate/StatusMenu.swift",
+        "Sources/DeskSkate/ModeController.swift"
+      ],
       "priority": 2,
-      "passes": false,
+      "passes": true,
       "notes": ""
     },
     {
@@ -152,13 +172,15 @@
       "title": "Headless physics scenarios",
       "description": "swift run simcheck runs scripted scenarios against the core and prints pass/fail.",
       "acceptanceCriteria": [
-        "Scenarios: drop onto a window ledge and settle; roll off a ledge end and land on a lower one; ride a window moving sideways; window flicked upward launches skater; window removed → falls to ground; quarter pipe sends skater up and back; grind a rail; autopilot runs 60s without getting stuck or leaving the screen",
+        "Scenarios: drop onto a window ledge and settle; roll off a ledge end and land on a lower one; ride a window moving sideways; window flicked upward launches skater; window removed \u2192 falls to ground; quarter pipe sends skater up and back; grind a rail; autopilot runs 60s without getting stuck or leaving the screen",
         "Exit code non-zero on any failure",
         "swift build passes"
       ],
-      "files": ["Sources/simcheck/main.swift"],
+      "files": [
+        "Sources/simcheck/main.swift"
+      ],
       "priority": 3,
-      "passes": false,
+      "passes": true,
       "notes": ""
     }
   ]

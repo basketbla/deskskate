@@ -3,3 +3,7 @@ build/
 *.app
 .DS_Store
 .swiftpm/
+
+# Local only: build notes written by the Stop hook, and the packaged download (ships as a GitHub release)
+docs/process-feedback.md
+site/DeskSkate.zip

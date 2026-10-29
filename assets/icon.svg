@@ -1,0 +1,43 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 1024 1024" width="1024" height="1024">
+<!-- DeskSkate app icon: the skater grinding the top edge of a folder. Source for assets/AppIcon.icns. -->
+<defs>
+<linearGradient id="bg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#F8FAFC"/><stop offset="1" stop-color="#E2E8F0"/></linearGradient>
+<linearGradient id="folder" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#7CC0F8"/><stop offset="1" stop-color="#3D8EE6"/></linearGradient>
+<filter id="shadow" x="-10%" y="-10%" width="120%" height="130%"><feDropShadow dx="0" dy="12" stdDeviation="14" flood-color="#000" flood-opacity="0.25"/></filter>
+</defs>
+<rect x="100" y="100" width="824" height="824" rx="185" fill="url(#bg)" filter="url(#shadow)"/>
+<rect x="100" y="100" width="824" height="824" rx="185" fill="none" stroke="#CBD5E1" stroke-width="4"/>
+<path d="M230,560 L230,522 Q230,500 252,500 L420,500 Q436,500 446,514 L462,540 L772,540 Q794,540 794,562 Z" fill="#5AA7EE"/>
+<rect x="230" y="560" width="564" height="300" rx="30" fill="url(#folder)"/>
+<rect x="230" y="560" width="564" height="10" fill="#A9D6FB"/>
+<g fill="#F59E0B">
+<path d="M488,556 L440,512 L451,509 Z"/><path d="M488,556 L436,540 L441,530 Z"/><path d="M488,556 L466,498 L476,500 Z"/>
+</g>
+<!-- Skater: local units, board centre at (0,0), y down; 1 unit = 5.6px, grinding the folder top (y=560). -->
+<g transform="translate(580 554) rotate(-8) scale(5.6)">
+<g fill="none" stroke-linecap="round" stroke-linejoin="round">
+<g stroke="#ffffff" stroke-width="6.6">
+<path d="M0,-27 L-6,-17 L-8,-7"/><path d="M0,-27 L7,-18 L8,-7"/>
+<path d="M1,-37 L-6,-32 L-12,-36"/><path d="M2,-37 L10,-34 L16,-38"/>
+<path d="M0,-27 L2,-38"/>
+<path d="M-17,-9 Q-15.5,-5 -12,-5 L12,-5 Q15.5,-5 17,-9"/>
+</g>
+<g stroke="#1d1f24" stroke-width="3.2">
+<path d="M0,-27 L-6,-17 L-8,-7"/><path d="M0,-27 L7,-18 L8,-7"/>
+<path d="M1,-37 L-6,-32 L-12,-36"/><path d="M2,-37 L10,-34 L16,-38"/>
+</g>
+<path d="M0,-27.5 L2,-37.5" stroke="#1d1f24" stroke-width="7.6"/>
+<path d="M0,-27.5 L2,-37.5" stroke="#EF4B2F" stroke-width="5"/>
+<path d="M-17,-9 Q-15.5,-5 -12,-5 L12,-5 Q15.5,-5 17,-9" stroke="#1d1f24" stroke-width="3.6"/>
+<path d="M-15.5,-7.2 Q-14.5,-5.4 -12,-5.4 L12,-5.4 Q14.5,-5.4 15.5,-7.2" stroke="#F59E0B" stroke-width="1.6"/>
+</g>
+<circle cx="3.5" cy="-45" r="7.2" fill="#ffffff"/>
+<circle cx="3.5" cy="-45" r="5.6" fill="#FDE4CF" stroke="#1d1f24" stroke-width="1.4"/>
+<path d="M-2.3,-45.6 A5.8,5.8 0 0 1 9.3,-45.6 Z" fill="#F59E0B" stroke="#1d1f24" stroke-width="1.2"/>
+<circle cx="3.5" cy="-51.8" r="1.7" fill="#EF4B2F" stroke="#1d1f24" stroke-width="0.8"/>
+<circle cx="6.4" cy="-43.6" r="0.85" fill="#1d1f24"/>
+<rect x="-11.5" y="-4.4" width="4" height="1.6" fill="#6b7280"/><rect x="7.5" y="-4.4" width="4" height="1.6" fill="#6b7280"/>
+<circle cx="-9.5" cy="-1.8" r="2.7" fill="#F4F4F5" stroke="#1d1f24" stroke-width="1.2"/>
+<circle cx="9.5" cy="-1.8" r="2.7" fill="#F4F4F5" stroke="#1d1f24" stroke-width="1.2"/>
+</g>
+</svg>
