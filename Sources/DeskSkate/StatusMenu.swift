@@ -63,6 +63,9 @@ final class StatusMenu: NSObject, NSMenuDelegate {
         addItem.submenu = addMenu
         menu.addItem(addItem)
         menu.addItem(action("Remove All Obstacles", #selector(removeAll)))
+        let icons = action("Skate on Desktop Icons", #selector(toggleIcons))
+        icons.state = state.desktopIcons ? .on : .off
+        menu.addItem(icons)
         let gravity = action("Obstacle Gravity", #selector(toggleGravity))
         gravity.state = state.obstacleGravity ? .on : .off
         menu.addItem(gravity)
@@ -133,6 +136,7 @@ final class StatusMenu: NSObject, NSMenuDelegate {
     @objc private func toggleHidden() { AppState.shared.hidden.toggle() }
     @objc private func togglePaused() { AppState.shared.paused.toggle() }
     @objc private func toggleSurfaces() { AppState.shared.showSurfaces.toggle() }
+    @objc private func toggleIcons() { AppState.shared.desktopIcons.toggle() }
     @objc private func toggleGravity() { AppState.shared.obstacleGravity.toggle() }
     @objc private func showControlsCard() {
         AppState.shared.showControls = true

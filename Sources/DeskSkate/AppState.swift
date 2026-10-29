@@ -17,6 +17,13 @@ final class AppState {
             if obstacleGravity != oldValue { changed() }
         }
     }
+    /// Desktop icons are ledges too (asks once for permission to control Finder).
+    var desktopIcons = UserDefaults.standard.object(forKey: "desktopIcons") as? Bool ?? true {
+        didSet {
+            UserDefaults.standard.set(desktopIcons, forKey: "desktopIcons")
+            if desktopIcons != oldValue { changed() }
+        }
+    }
     /// The controls card in keyboard mode (toggled with `/`).
     var showControls = true { didSet { if showControls != oldValue { changed() } } }
     /// Draw the collision surfaces over the desktop (debug).

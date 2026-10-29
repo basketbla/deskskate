@@ -5,7 +5,9 @@ windows, rides them when you drag them, gets launched when you flick one upward,
 you pull one out from under it. Drop quarter pipes, kickers, rails and boxes on the desktop from
 the menu bar and drag them wherever you like.
 
-No permissions needed: window positions come from the window server, titles are never read.
+No permissions needed for windows: positions come from the window server, titles are never read.
+Desktop icons are ledges too (menu: **Skate on Desktop Icons**); for that macOS asks once to let
+DeskSkate control Finder, which is the only place icon positions come from.
 
 ## Run
 

@@ -14,6 +14,9 @@ import CoreGraphics
 public enum SurfaceBuilder {
     public static let minWindowWidth: CGFloat = 60
     public static let minWindowHeight: CGFloat = 40
+    /// Desktop icons are passed in as windows with ids from here up, behind every real window.
+    /// They are exempt from the minimum size (small icon sizes are still rideable).
+    public static let iconIDBase: UInt32 = 0xE000_0000
     public static let minLedgeLength: CGFloat = 24
     /// How far above a window's top another window's top may sit and still count as covering it.
     static let coverSlop: CGFloat = 2
@@ -44,7 +47,8 @@ public enum SurfaceBuilder {
         var allowed: [(CGFloat, CGFloat)] = []
         for window in windows {
             let f = window.frame.standardized
-            guard f.width >= minWindowWidth, f.height >= minWindowHeight else { continue }
+            guard window.id >= iconIDBase || (f.width >= minWindowWidth && f.height >= minWindowHeight)
+            else { continue }
             let y = f.maxY
 
             // Horizontal extents of screens this edge's height lies on.

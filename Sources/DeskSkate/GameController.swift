@@ -53,6 +53,7 @@ final class GameController {
         guard !started else { return }
         started = true
         skater = Skater(spawn: Self.spawnPoint(on: NSScreen.main ?? NSScreen.screens.first))
+        DesktopIcons.shared.setEnabled(AppState.shared.desktopIcons)
         buildPanels()
 
         let nc = NotificationCenter.default
@@ -133,6 +134,7 @@ final class GameController {
 
     private func appStateChanged() {
         let state = AppState.shared
+        DesktopIcons.shared.setEnabled(state.desktopIcons)
         if state.hidden {
             for panel in panels { panel.orderOut(nil) }
             displayLink?.isPaused = true
@@ -199,8 +201,11 @@ final class GameController {
             w.frame = w.frame.offsetBy(dx: w.velocity.dx * ahead, dy: w.velocity.dy * ahead)
             return w
         } : polledWindows
+        let icons = DesktopIcons.shared.frames.enumerated().map { i, frame in
+            TrackedWindow(id: SurfaceBuilder.iconIDBase + UInt32(i), frame: frame, zIndex: windows.count + i)
+        }
         let obstacles = ObstacleManager.shared.currentModels(dt: clampedDT)
-        let world = SurfaceBuilder.build(windows: windows, screens: WindowTracker.screenFrames(),
+        let world = SurfaceBuilder.build(windows: windows + icons, screens: WindowTracker.screenFrames(),
                                          obstacles: obstacles, docks: tracker.dockFrames)
         self.world = world
         ObstacleManager.shared.applyGravity(dt: clampedDT, world: world)

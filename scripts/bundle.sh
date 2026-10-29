@@ -19,6 +19,7 @@ cat > "$APP/Contents/Info.plist" <<PLIST
   <key>CFBundleShortVersionString</key><string>0.1.0</string>
   <key>LSMinimumSystemVersion</key><string>14.0</string>
   <key>LSUIElement</key><true/>
+  <key>NSAppleEventsUsageDescription</key><string>DeskSkate asks Finder where your desktop icons are so the skater can ride on them.</string>
 </dict></plist>
 PLIST
 codesign --force --sign - "$APP" >/dev/null
