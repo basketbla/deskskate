@@ -18,6 +18,8 @@ public final class Skater {
         public static let rollingFrictionConstant: CGFloat = 12
         /// Arcade gravity on ramps so desktop-sized quarter pipes and kickers are reachable.
         public static let rampGravityScale: CGFloat = 0.3
+        /// How far past a ledge's end a landing from above still catches it (half a board).
+        public static let landingEdgeSlop: CGFloat = 14
         public static let grindFriction: CGFloat = 0.08
         public static let bailFriction: CGFloat = 3
         public static let bailFrictionConstant: CGFloat = 250
@@ -719,7 +721,9 @@ public final class Skater {
             let t = (hp - s.a).dot(s.direction)
             // End slop only when actually coming from above; otherwise rolling off an end
             // re-lands on the segment just left and the skater freezes there.
-            let slop: CGFloat = d0 > 0.5 ? 0.5 : -1e-3
+            // Coming down from above, half a board hanging past the end still lands (snapped onto
+            // the end). Otherwise no slop: rolling off an end must not re-land on it.
+            let slop: CGFloat = d0 > 0.5 ? Tuning.landingEdgeSlop : -1e-3
             guard t >= -slop, t <= s.length + slop else { continue }
             if u < bestU {
                 bestU = u

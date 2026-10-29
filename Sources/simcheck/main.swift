@@ -140,6 +140,16 @@ func dropOntoLedge() -> Result {
     return (ok, "ledgeY=500 \(describe(s)) events=\(eventSummary(sim))")
 }
 
+/// Dropped with half the board past a ledge's end, the skater still lands on it.
+func landHalfOnLedge() -> Result {
+    let w = TrackedWindow(id: 1, frame: CGRect(x: 400, y: 200, width: 300, height: 300), zIndex: 0)
+    let sim = Sim(windows: [w], spawn: CGPoint(x: 710, y: 700))
+    sim.run(seconds: 0.6)
+    let s = sim.state
+    let ok = s.surfaceID?.hasPrefix("w1") ?? false
+    return (ok, "spawnX=710 ledgeEnd=700 \(describe(s))")
+}
+
 func rollOffLedgeOntoLower() -> Result {
     // Upper window x 300…600 top 500; lower window behind it, x 500…1000 top 300 (visible 600…1000).
     let upper = TrackedWindow(id: 1, frame: CGRect(x: 300, y: 200, width: 300, height: 300), zIndex: 0)
@@ -409,6 +419,7 @@ func autopilot60s() -> Result {
 
 let scenarios: [(String, () -> Result)] = [
     ("drop-onto-ledge", dropOntoLedge),
+    ("land-half-on-ledge", landHalfOnLedge),
     ("roll-off-onto-lower-ledge", rollOffLedgeOntoLower),
     ("ride-moving-window", rideMovingWindow),
     ("flick-window-up", flickWindowUp),

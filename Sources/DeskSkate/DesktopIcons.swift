@@ -8,7 +8,7 @@ import AppKit
 final class DesktopIcons {
     static let shared = DesktopIcons()
 
-    /// Icon image rects in global AppKit coordinates (labels excluded).
+    /// Icon rects in global AppKit coordinates: the picture's height, a little wider than it.
     private(set) var frames: [CGRect] = []
 
     private var timer: Timer?
@@ -77,7 +77,10 @@ final class DesktopIcons {
         var i = 1
         while i + 1 < numbers.count {
             let cx = CGFloat(numbers[i]), cy = CGFloat(numbers[i + 1])
-            rects.append(CGRect(x: cx - side / 2, y: primaryHeight - cy - side / 2, width: side, height: side))
+            // The ledge is a bit wider than the icon picture so there's room to land.
+            let pad = max(10, side * 0.2)
+            rects.append(CGRect(x: cx - side / 2 - pad, y: primaryHeight - cy - side / 2,
+                                width: side + 2 * pad, height: side))
             i += 2
         }
         return rects
