@@ -66,11 +66,15 @@ final class GameController {
         }
     }
 
-    /// Put the skater back on screen near the top of the screen the mouse is on.
+    /// Drop the skater in at the mouse (kept inside the screen it is on).
     func respawn() {
         let mouse = NSEvent.mouseLocation
         let screen = NSScreen.screens.first { NSMouseInRect(mouse, $0.frame, false) } ?? NSScreen.main
-        let point = Self.spawnPoint(on: screen)
+        var point = mouse
+        if let vf = screen?.visibleFrame {
+            point.x = min(max(point.x, vf.minX + 20), vf.maxX - 20)
+            point.y = min(max(point.y, vf.minY + 1), vf.maxY - 10)
+        }
         if let skater {
             skater.respawn(at: point)
             renderer.handle(events: [.respawned], state: skater.state)
