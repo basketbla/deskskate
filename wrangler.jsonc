@@ -1,0 +1,8 @@
+{
+  "$schema": "https://json.schemastore.org/wrangler.json",
+  // The landing page in site/, served as static assets at deskskate.rhett.info.
+  "name": "deskskate",
+  "compatibility_date": "2026-10-01",
+  "assets": { "directory": "./site" },
+  "routes": [{ "pattern": "deskskate.rhett.info", "custom_domain": true }]
+}
