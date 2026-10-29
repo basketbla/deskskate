@@ -327,6 +327,7 @@ final class GameController {
 
         let r = Self.dirtyRadius
         let current = CGRect(x: position.x - r, y: position.y - r, width: 2 * r, height: 2 * r)
+            .union(renderer.effectsBounds)
         let dirty = lastDirty.isNull ? current : current.union(lastDirty)
         lastDirty = current
         guard dirty.width.isFinite, dirty.height.isFinite else { return }

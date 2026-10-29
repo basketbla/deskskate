@@ -61,6 +61,15 @@ final class SkaterRenderer {
     }
 
     private var particles: [Particle] = []
+
+    /// Area the live particles cover (generous: puffs grow as they fade). The overlay repaints
+    /// it each frame so effects left behind when the skater moves away don't freeze on screen.
+    var effectsBounds: CGRect {
+        particles.reduce(CGRect.null) { r, p in
+            let m = p.size * 4 + 8
+            return r.union(CGRect(x: p.position.x - m, y: p.position.y - m, width: 2 * m, height: 2 * m))
+        }
+    }
     private let maxParticles = 200
     private var lastState: SkaterState?
     private var clock: Double = 0
