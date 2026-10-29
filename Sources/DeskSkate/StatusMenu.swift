@@ -47,7 +47,7 @@ final class StatusMenu: NSObject, NSMenuDelegate {
         // Shown next to whichever mode the hotkey would switch to.
         let toggleTarget = state.mode == .autonomous ? keyboard : auto
         toggleTarget.keyEquivalent = "s"
-        toggleTarget.keyEquivalentModifierMask = [.control, .option]
+        toggleTarget.keyEquivalentModifierMask = [.command, .option]
         menu.addItem(auto)
         menu.addItem(keyboard)
 
@@ -90,7 +90,7 @@ final class StatusMenu: NSObject, NSMenuDelegate {
             "R — respawn at the mouse",
             "/ — show or hide the controls card",
             "Esc — back to autonomous",
-            "⌃⌥S — switch mode (or take the keys back)",
+            "⌘⌥S — switch mode (or take the keys back)",
             "⌃⌥H — hide/show",
             "Drag the skater to pick him up",
         ] {

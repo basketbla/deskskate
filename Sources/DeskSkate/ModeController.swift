@@ -3,10 +3,10 @@ import Carbon
 
 /// Global hotkeys and switching keyboard focus in and out of the overlay. (US-009)
 ///
-/// ⌃⌥S toggles autonomous/keyboard, ⌃⌥H hides/shows. Carbon `RegisterEventHotKey` needs no
+/// ⌘⌥S toggles autonomous/keyboard, ⌃⌥H hides/shows. Carbon `RegisterEventHotKey` needs no
 /// Accessibility or Input Monitoring permission. Entering keyboard mode remembers the frontmost
-/// app and activates DeskSkate; leaving it (Esc, ⌃⌥S, menu) hands focus back. Clicking another
-/// app keeps keyboard mode (the skater just stops getting keys); ⌃⌥S then takes focus back
+/// app and activates DeskSkate; leaving it (Esc, ⌘⌥S, menu) hands focus back. Clicking another
+/// app keeps keyboard mode (the skater just stops getting keys); ⌘⌥S then takes focus back
 /// instead of switching modes.
 final class ModeController {
     static let shared = ModeController()
@@ -55,9 +55,8 @@ final class ModeController {
         }, 1, &spec, nil, &handlerRef)
         if status != noErr { NSLog("DeskSkate: InstallEventHandler failed (\(status))") }
 
-        let mods = UInt32(controlKey | optionKey)
-        register(keyCode: UInt32(kVK_ANSI_S), modifiers: mods, id: Self.toggleModeID)
-        register(keyCode: UInt32(kVK_ANSI_H), modifiers: mods, id: Self.toggleHiddenID)
+        register(keyCode: UInt32(kVK_ANSI_S), modifiers: UInt32(cmdKey | optionKey), id: Self.toggleModeID)
+        register(keyCode: UInt32(kVK_ANSI_H), modifiers: UInt32(controlKey | optionKey), id: Self.toggleHiddenID)
     }
 
     private func register(keyCode: UInt32, modifiers: UInt32, id: UInt32) {

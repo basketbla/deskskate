@@ -18,9 +18,9 @@ swift run simcheck         # headless physics scenarios
 
 - **Autonomous** (default): the skater cruises, ollies onto ledges, flips off ramps and grinds
   rails on its own. After a while on the floor it drops back in from the top of a screen.
-- **Keyboard**: `⌃⌥S` (or the menu) hands the keyboard to the skater and shows a controls card
+- **Keyboard**: `⌘⌥S` (or the menu) hands the keyboard to the skater and shows a controls card
   (`/` hides it). `Esc` gives the keyboard back to the app you were in. Clicking another app keeps
-  keyboard mode; `⌃⌥S` takes the keys back.
+  keyboard mode; `⌘⌥S` takes the keys back.
 
 | Key | |
 |---|---|
