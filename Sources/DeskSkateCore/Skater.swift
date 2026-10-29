@@ -437,7 +437,8 @@ public final class Skater {
 
         // Rolled onto an obstacle that starts on this surface (a kicker on the floor).
         if cur.id == s.id, currentMode == .rolling,
-           let hit = sweep(from: start, to: newPos, velocity: dir * speed + ov, world: world, h: 0, excluding: s.id),
+           let hit = sweep(from: start, to: newPos, velocity: dir * speed + ov, world: world, h: 0, excluding: s.id)
+            ?? rampEntry(from: start, to: newPos, on: s, world: world),
            hit.surface.ownerID != s.ownerID || hit.surface.ownerID == nil {
             let moveDir = dir * (speed >= 0 ? 1 : -1)
             if abs(moveDir.dot(hit.surface.direction)) > cos(Tuning.maxChainTurn) {
@@ -675,6 +676,28 @@ public final class Skater {
     }
 
     private struct Hit { var surface: Surface; var point: CGPoint }
+
+    /// A ramp resting on this surface rarely sits exactly on its line (a ramp riding a window
+    /// lags it slightly), so the swept test can pass just under the ramp's first segment. Catch
+    /// the ramp's entry endpoint when it lies within a few points of the floor we're crossing.
+    private func rampEntry(from p0: CGPoint, to p1: CGPoint, on floor: Surface, world: WorldSnapshot) -> Hit? {
+        let movingRight = p1.x >= p0.x
+        let lo = min(p0.x, p1.x) - 0.5, hi = max(p0.x, p1.x) + 0.5
+        let fd = floor.direction
+        guard abs(fd.dx) > 1e-6 else { return nil }
+        var best: Hit?
+        var bestDist = CGFloat.infinity
+        for s in world.surfaces where s.kind != .wall && s.id != floor.id && s.length > 1e-3 {
+            guard s.ownerID != floor.ownerID || s.ownerID == nil, s.normal.dy > 0.05 else { continue }
+            let entry = movingRight ? (s.a.x <= s.b.x ? s.a : s.b) : (s.a.x >= s.b.x ? s.a : s.b)
+            guard entry.x >= lo, entry.x <= hi else { continue }
+            let floorY = floor.a.y + fd.dy / fd.dx * (entry.x - floor.a.x)
+            guard abs(entry.y - floorY) < 4 else { continue }
+            let dist = abs(entry.x - p0.x)
+            if dist < bestDist { bestDist = dist; best = Hit(surface: s, point: entry) }
+        }
+        return best
+    }
 
     /// Swept feet test against floor-like surfaces, entered from the normal side.
     private func sweep(from p0: CGPoint, to p1: CGPoint, velocity v: CGVector, world: WorldSnapshot,

@@ -245,6 +245,44 @@ func quarterPipe() -> Result {
     return (ok, "entryVx=\(f(entry)) maxY=\(f(maxY)) cameBack=\(cameBack) vertAir=\(sawVertAir) surfaces=\(surfaces.sorted()) final \(describe(s)) events=\(eventSummary(sim))")
 }
 
+/// Ramps resting on a window rarely sit exactly on its top edge; the skater must roll onto
+/// them whichever side of the line they are, from either direction.
+func rampsOnWindow() -> Result {
+    var failures: [String] = []
+    var runs = 0
+    for kind in [ObstacleKind.quarterPipe, .kicker, .box] {
+        for flipped in [false, true] {
+            for offset: CGFloat in [-1.5, -0.3, 0, 0.3, 1.5, 3] {
+                runs += 1
+                let w = TrackedWindow(id: 1, frame: CGRect(x: 100, y: 200, width: 1200, height: 300), zIndex: 0)
+                let size = kind.defaultSize
+                let ox: CGFloat = flipped ? 300 : 900
+                let ramp = ObstacleModel(kind: kind, frame: CGRect(x: ox, y: 500 + offset, width: size.width,
+                                                                   height: size.height),
+                                         flipped: flipped, ownerID: 300)
+                // Unflipped ramps rise to the right: approach from the left, and vice versa.
+                let startX: CGFloat = flipped ? 900 : 300
+                let sim = Sim(windows: [w], obstacles: [ramp], spawn: CGPoint(x: startX, y: 505))
+                sim.run(seconds: 0.5)
+                var onRamp = false
+                var passedThrough = false
+                sim.run(seconds: 2.5) { sim in
+                    let st = sim.state
+                    if st.surfaceID?.hasPrefix("o300") ?? false { onRamp = true }
+                    let beyond = flipped ? st.position.x < ox - 5 : st.position.x > ox + size.width + 5
+                    if !onRamp && beyond && st.phase == .rolling { passedThrough = true }
+                    return Controls(left: flipped && st.velocity.dx > -330, right: !flipped && st.velocity.dx < 330)
+                }
+                if !onRamp || passedThrough {
+                    failures.append("\(kind.rawValue)\(flipped ? "-flipped" : "") offset \(f(offset))")
+                }
+            }
+        }
+    }
+    return (failures.isEmpty, "\(runs - failures.count)/\(runs) rolled onto the ramp"
+        + (failures.isEmpty ? "" : "; missed: \(failures.joined(separator: ", "))"))
+}
+
 func kicker() -> Result {
     let k = ObstacleModel(kind: .kicker, frame: CGRect(x: 800, y: 0, width: 110, height: 44), ownerID: 101)
     let sim = Sim(obstacles: [k], spawn: CGPoint(x: 150, y: 5))
@@ -377,6 +415,7 @@ let scenarios: [(String, () -> Result)] = [
     ("window-removed", windowRemoved),
     ("quarter-pipe", quarterPipe),
     ("kicker", kicker),
+    ("ramps-on-window", rampsOnWindow),
     ("grind-rail", grindRailScenario),
     ("ollie-onto-higher-ledge", ollieOntoHigherLedge),
     ("autopilot-60s", autopilot60s),
