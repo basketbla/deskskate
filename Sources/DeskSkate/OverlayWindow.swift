@@ -52,7 +52,13 @@ final class OverlayView: NSView {
             drawSurfaces(world.surfaces, in: ctx)
         }
         if let skater = game.skater {
-            game.renderer.draw(skater.state, in: ctx)
+            var state = skater.state
+            // Physics holds the board position; the held pose is drawn from the grab point.
+            if state.phase == .held { state.position.y += SkaterRenderer.heldBoardOffset }
+            game.renderer.draw(state, in: ctx)
+        }
+        if let screen = game.controlsScreen, screen == window.frame {
+            ControlsHUD.draw(in: ctx, screen: screen, alpha: NSApp.isActive ? 1 : 0.55)
         }
         ctx.restoreGState()
     }
@@ -97,6 +103,13 @@ final class OverlayView: NSView {
         case .wall: CGColor(srgbRed: 1.0, green: 0.2, blue: 0.2, alpha: 0.9)
         }
     }
+
+    // MARK: Mouse (only reaches us while the cursor is over the skater)
+
+    override func acceptsFirstMouse(for event: NSEvent?) -> Bool { true }
+    override func mouseDown(with event: NSEvent) { GameController.shared.mouseDown() }
+    override func mouseDragged(with event: NSEvent) { GameController.shared.mouseDragged() }
+    override func mouseUp(with event: NSEvent) { GameController.shared.mouseUp() }
 
     // MARK: Keyboard
 

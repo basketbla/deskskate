@@ -63,6 +63,9 @@ final class StatusMenu: NSObject, NSMenuDelegate {
         addItem.submenu = addMenu
         menu.addItem(addItem)
         menu.addItem(action("Remove All Obstacles", #selector(removeAll)))
+        let gravity = action("Obstacle Gravity", #selector(toggleGravity))
+        gravity.state = state.obstacleGravity ? .on : .off
+        menu.addItem(gravity)
 
         menu.addItem(.separator())
         menu.addItem(action("Respawn Skater", #selector(respawn)))
@@ -82,12 +85,14 @@ final class StatusMenu: NSObject, NSMenuDelegate {
         for line in [
             "←/→ or A/D — push & turn",
             "Space — hold to crouch, release to ollie",
-            "↑, W or F — flip trick (in the air)",
-            "↓ or S — hold to grind",
+            "↑, W or F — kickflip & other flips (in the air)",
+            "↓ or S — hold while landing to grind",
             "R — respawn at the mouse",
+            "/ — show or hide the controls card",
             "Esc — back to autonomous",
-            "⌃⌥S — switch mode",
+            "⌃⌥S — switch mode (or take the keys back)",
             "⌃⌥H — hide/show",
+            "Drag the skater to pick him up",
         ] {
             let i = NSMenuItem(title: line, action: nil, keyEquivalent: "")
             i.isEnabled = false
@@ -95,6 +100,8 @@ final class StatusMenu: NSObject, NSMenuDelegate {
         }
         controlsItem.submenu = controls
         menu.addItem(controlsItem)
+        let card = action("Show Controls Card", #selector(showControlsCard))
+        menu.addItem(card)
 
         menu.addItem(.separator())
         let quit = action("Quit DeskSkate", #selector(quit))
@@ -126,5 +133,10 @@ final class StatusMenu: NSObject, NSMenuDelegate {
     @objc private func toggleHidden() { AppState.shared.hidden.toggle() }
     @objc private func togglePaused() { AppState.shared.paused.toggle() }
     @objc private func toggleSurfaces() { AppState.shared.showSurfaces.toggle() }
+    @objc private func toggleGravity() { AppState.shared.obstacleGravity.toggle() }
+    @objc private func showControlsCard() {
+        AppState.shared.showControls = true
+        AppState.shared.mode = .keyboard
+    }
     @objc private func quit() { NSApp.terminate(nil) }
 }

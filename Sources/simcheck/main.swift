@@ -105,6 +105,7 @@ func phaseName(_ p: SkaterPhase) -> String {
     case .airborne: "airborne"
     case .grinding: "grinding"
     case .bailed(let r): String(format: "bailed(%.2f)", r)
+    case .held: "held"
     }
 }
 
@@ -379,6 +380,11 @@ let scenarios: [(String, () -> Result)] = [
     ("grind-rail", grindRailScenario),
     ("ollie-onto-higher-ledge", ollieOntoHigherLedge),
     ("autopilot-60s", autopilot60s),
+    ("jerky-drag-up", jerkyDragUp),
+    ("jerky-drag-sideways", jerkyDragSideways),
+    ("jerky-drag-down", jerkyDragDown),
+    ("grab-and-drop", grabAndDrop),
+    ("throw", throwSkater),
 ]
 
 let filter = CommandLine.arguments.dropFirst().first

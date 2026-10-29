@@ -23,6 +23,11 @@ final class GameController {
     // Windows are polled at 30Hz and extrapolated by their velocity in between.
     private var polledWindows: [TrackedWindow] = []
     private var lastPoll: CFTimeInterval = 0
+    // Mouse grab: true from mouseDown on the skater until mouseUp.
+    private var isDragging = false
+    private var lastDragTime: CFTimeInterval = 0
+    /// Which screen's overlay shows the controls card, so moving screens redraws both.
+    private var hudScreen: CGRect = .null
     // Autonomous mode: seconds spent on the screen floor; long stretches end in a drop-in.
     private var groundTime: Double = 0
     private var nextDropIn = Double.random(in: 25...45)
@@ -38,7 +43,7 @@ final class GameController {
 
     private enum Key {
         static let a: UInt16 = 0, s: UInt16 = 1, d: UInt16 = 2, f: UInt16 = 3
-        static let w: UInt16 = 13, r: UInt16 = 15, space: UInt16 = 49, esc: UInt16 = 53
+        static let w: UInt16 = 13, r: UInt16 = 15, space: UInt16 = 49, esc: UInt16 = 53, slash: UInt16 = 44
         static let left: UInt16 = 123, right: UInt16 = 124, down: UInt16 = 125, up: UInt16 = 126
     }
 
@@ -55,6 +60,9 @@ final class GameController {
                        queue: .main) { [weak self] _ in self?.buildPanels() }
         nc.addObserver(forName: .appStateChanged, object: nil, queue: .main) { [weak self] _ in
             self?.appStateChanged()
+        }
+        for name in [NSApplication.didBecomeActiveNotification, NSApplication.didResignActiveNotification] {
+            nc.addObserver(forName: name, object: nil, queue: .main) { [weak self] _ in self?.redrawAll() }
         }
     }
 
@@ -147,7 +155,7 @@ final class GameController {
         }
     }
 
-    private func focusKeyboardPanel() {
+    func focusKeyboardPanel() {
         let position = skater?.state.position ?? .zero
         let panel = panels.first { NSMouseInRect(position, $0.frame, false) }
             ?? panels.first { $0.screen == NSScreen.main }
@@ -189,8 +197,11 @@ final class GameController {
         } : polledWindows
         let obstacles = ObstacleManager.shared.currentModels(dt: clampedDT)
         let world = SurfaceBuilder.build(windows: windows, screens: WindowTracker.screenFrames(),
-                                         obstacles: obstacles)
+                                         obstacles: obstacles, docks: tracker.dockFrames)
         self.world = world
+        ObstacleManager.shared.applyGravity(dt: clampedDT, world: world)
+        liftOntoDock(world: world)
+        updateMouseHover()
 
         if !state.paused, clampedDT > 0 {
             let input: SkaterInput
@@ -210,6 +221,92 @@ final class GameController {
         }
 
         invalidate(around: skater.state.position, paused: state.paused, showSurfaces: state.showSurfaces)
+        let screen = hudVisible ? (screenFrame(containing: skater.state.position) ?? .null) : .null
+        if screen != hudScreen {
+            hudScreen = screen
+            redrawAll()
+        }
+    }
+
+    /// The Dock slid up over the floor the skater is rolling on: pop him up onto it.
+    private func liftOntoDock(world: WorldSnapshot) {
+        guard let skater, !skater.isHeld, skater.state.surfaceID?.hasPrefix("g") == true else { return }
+        let p = skater.state.position
+        for dock in world.surfaces where dock.id.hasPrefix("dock-") {
+            if dock.a.x <= p.x, p.x <= dock.b.x, dock.a.y > p.y + 2, dock.a.y < p.y + 250 {
+                skater.respawn(at: CGPoint(x: p.x, y: dock.a.y + 1))
+                return
+            }
+        }
+    }
+
+    private func screenFrame(containing point: CGPoint) -> CGRect? {
+        panels.map(\.frame).first { $0.contains(point) }
+    }
+
+    // MARK: Controls card
+
+    /// Shown in keyboard mode on the skater's screen until `/` hides it.
+    var hudVisible: Bool {
+        let state = AppState.shared
+        return state.mode == .keyboard && state.showControls && !state.hidden
+    }
+
+    /// The screen frame whose overlay draws the card, if any.
+    var controlsScreen: CGRect? { hudScreen.isNull ? nil : hudScreen }
+
+    // MARK: Mouse grab
+
+    /// Hit box around the skater (board at the bottom, head ~45pt up).
+    private func skaterHitRect() -> CGRect {
+        guard let p = skater?.state.position else { return .null }
+        return CGRect(x: p.x - 24, y: p.y - 8, width: 48, height: 62)
+    }
+
+    /// Overlays ignore the mouse except right over the skater, so he can be picked up while
+    /// clicks everywhere else go to the windows underneath.
+    private func updateMouseHover() {
+        guard !isDragging else { return }
+        let mouse = NSEvent.mouseLocation
+        let hover = !AppState.shared.hidden && skaterHitRect().contains(mouse)
+        for panel in panels {
+            let ignore = !(hover && NSMouseInRect(mouse, panel.frame, false))
+            if panel.ignoresMouseEvents != ignore { panel.ignoresMouseEvents = ignore }
+        }
+    }
+
+    /// Physics keeps the board's position; the held pose hangs below the mouse.
+    private func boardPoint(forMouse mouse: CGPoint) -> CGPoint {
+        CGPoint(x: mouse.x, y: mouse.y - SkaterRenderer.heldBoardOffset)
+    }
+
+    func mouseDown() {
+        guard let skater else { return }
+        isDragging = true
+        lastDragTime = CACurrentMediaTime()
+        let events = skater.grab(at: boardPoint(forMouse: NSEvent.mouseLocation))
+        renderer.handle(events: events, state: skater.state)
+        lastEvents = events
+        NSCursor.closedHand.push()
+    }
+
+    func mouseDragged() {
+        guard isDragging, let skater else { return }
+        let now = CACurrentMediaTime()
+        skater.drag(to: boardPoint(forMouse: NSEvent.mouseLocation), dt: max(now - lastDragTime, 1.0 / 240))
+        lastDragTime = now
+        if AppState.shared.paused { redrawAll() }
+    }
+
+    func mouseUp() {
+        guard isDragging, let skater else { return }
+        isDragging = false
+        mouseDragged()
+        let events = skater.release()
+        renderer.handle(events: events, state: skater.state)
+        lastEvents = events
+        NSCursor.pop()
+        updateMouseHover()
     }
 
     private func invalidate(around position: CGPoint, paused: Bool, showSurfaces: Bool) {
@@ -246,6 +343,7 @@ final class GameController {
         case Key.space: jumpPressed = true
         case Key.up, Key.w, Key.f: trickPressed = true
         case Key.r: respawn()
+        case Key.slash: AppState.shared.showControls.toggle()
         case Key.esc:
             clearKeys()
             AppState.shared.mode = .autonomous
@@ -263,7 +361,7 @@ final class GameController {
 
     private static func isGameKey(_ code: UInt16) -> Bool {
         switch code {
-        case Key.a, Key.s, Key.d, Key.f, Key.w, Key.r, Key.space, Key.esc,
+        case Key.a, Key.s, Key.d, Key.f, Key.w, Key.r, Key.space, Key.esc, Key.slash,
              Key.left, Key.right, Key.down, Key.up: true
         default: false
         }

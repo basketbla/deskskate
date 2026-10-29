@@ -1,5 +1,6 @@
 #!/bin/bash
-# Build DeskSkate.app (menu bar app, no Dock icon) into build/. Usage: scripts/bundle.sh [--open]
+# Build DeskSkate.app (menu bar app, no Dock icon) into build/, install it to /Applications.
+# Usage: scripts/bundle.sh [--open]
 set -euo pipefail
 cd "$(dirname "$0")/.."
 swift build -c release --product DeskSkate
@@ -25,5 +26,10 @@ echo "built $APP"
 if [[ "${1:-}" == "--open" ]]; then
   pkill -x DeskSkate 2>/dev/null || true
   for _ in $(seq 50); do pgrep -x DeskSkate >/dev/null || break; sleep 0.1; done
-  open "$APP"
+fi
+rm -rf /Applications/DeskSkate.app
+cp -R "$APP" /Applications/DeskSkate.app
+echo "installed /Applications/DeskSkate.app"
+if [[ "${1:-}" == "--open" ]]; then
+  open /Applications/DeskSkate.app
 fi

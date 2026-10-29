@@ -5,8 +5,9 @@ import Carbon
 ///
 /// ⌃⌥S toggles autonomous/keyboard, ⌃⌥H hides/shows. Carbon `RegisterEventHotKey` needs no
 /// Accessibility or Input Monitoring permission. Entering keyboard mode remembers the frontmost
-/// app and activates DeskSkate; leaving it (Esc, ⌃⌥S, menu) hands focus back. If the user
-/// switches to another app themselves, we fall back to autonomous without stealing focus back.
+/// app and activates DeskSkate; leaving it (Esc, ⌃⌥S, menu) hands focus back. Clicking another
+/// app keeps keyboard mode (the skater just stops getting keys); ⌃⌥S then takes focus back
+/// instead of switching modes.
 final class ModeController {
     static let shared = ModeController()
 
@@ -21,8 +22,6 @@ final class ModeController {
 
     private var previousMode: AppState.Mode = .autonomous
     private var rememberedApp: NSRunningApplication?
-    /// Set when we leave keyboard mode because the user activated another app.
-    private var suppressReactivate = false
 
     func install() {
         guard !installed else { return }
@@ -33,10 +32,6 @@ final class ModeController {
         let nc = NotificationCenter.default
         observers.append(nc.addObserver(forName: .appStateChanged, object: nil, queue: .main) { [weak self] _ in
             self?.stateChanged()
-        })
-        observers.append(nc.addObserver(forName: NSApplication.didResignActiveNotification,
-                                        object: nil, queue: .main) { [weak self] _ in
-            self?.resignedActive()
         })
     }
 
@@ -80,7 +75,11 @@ final class ModeController {
         let state = AppState.shared
         switch id {
         case Self.toggleModeID:
-            state.mode = state.mode == .keyboard ? .autonomous : .keyboard
+            if state.mode == .keyboard && !NSApp.isActive {
+                refocusKeyboard()
+            } else {
+                state.mode = state.mode == .keyboard ? .autonomous : .keyboard
+            }
         case Self.toggleHiddenID:
             state.hidden.toggle()
         default:
@@ -101,28 +100,31 @@ final class ModeController {
     }
 
     private func enterKeyboard() {
-        suppressReactivate = false
-        if let front = NSWorkspace.shared.frontmostApplication,
-           front.processIdentifier != ProcessInfo.processInfo.processIdentifier {
-            rememberedApp = front
-        }
+        rememberFrontApp()
+        AppState.shared.showControls = true
         if AppState.shared.hidden { AppState.shared.hidden = false }
         NSApp.activate(ignoringOtherApps: true)
     }
 
-    private func leaveKeyboard() {
-        defer {
-            rememberedApp = nil
-            suppressReactivate = false
-        }
-        guard !suppressReactivate, NSApp.isActive,
-              let app = rememberedApp, !app.isTerminated else { return }
-        app.activate()
+    /// Keyboard mode, but the user clicked into another app: take the keys back.
+    private func refocusKeyboard() {
+        rememberFrontApp()
+        if AppState.shared.hidden { AppState.shared.hidden = false }
+        NSApp.activate(ignoringOtherApps: true)
+        GameController.shared.focusKeyboardPanel()
     }
 
-    private func resignedActive() {
-        guard AppState.shared.mode == .keyboard else { return }
-        suppressReactivate = true
-        AppState.shared.mode = .autonomous
+    private func rememberFrontApp() {
+        if let front = NSWorkspace.shared.frontmostApplication,
+           front.processIdentifier != ProcessInfo.processInfo.processIdentifier {
+            rememberedApp = front
+        }
+    }
+
+    private func leaveKeyboard() {
+        defer { rememberedApp = nil }
+        guard NSApp.isActive,
+              let app = rememberedApp, !app.isTerminated else { return }
+        app.activate()
     }
 }

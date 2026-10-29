@@ -181,6 +181,8 @@ public enum SkaterPhase: Equatable {
     case grinding
     /// Fell off. `remaining` counts down to getting back up.
     case bailed(remaining: Double)
+    /// Picked up by the mouse. Physics is suspended until released.
+    case held
 }
 
 public enum TrickKind: String, CaseIterable { case kickflip, heelflip, shuvit, threeSixtyFlip }
@@ -229,4 +231,6 @@ public enum SkaterEvent: Equatable {
     case bail
     case trickStarted(TrickKind)
     case respawned
+    case grabbed
+    case thrown
 }

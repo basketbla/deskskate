@@ -38,6 +38,22 @@ final class WindowTracker {
 
     /// Current on-screen windows in global AppKit coordinates, with velocities measured
     /// against the previous call. `now` is a monotonic timestamp in seconds.
+    /// The Dock's bar while it is on screen (an auto-hidden Dock has no window), in AppKit
+    /// coordinates. Updated by `poll`.
+    private(set) var dockFrames: [CGRect] = []
+
+    private static let dockLevel = Int(CGWindowLevelForKey(.dockWindow))
+
+    private static func dockFrame(_ entry: [String: Any], primaryHeight: CGFloat) -> CGRect? {
+        guard (entry[kCGWindowOwnerName as String] as? String) == "Dock",
+              (entry[kCGWindowLayer as String] as? NSNumber)?.intValue == dockLevel,
+              let boundsDict = entry[kCGWindowBounds as String] as? NSDictionary,
+              let b = CGRect(dictionaryRepresentation: boundsDict as CFDictionary),
+              b.width >= 100, b.height >= 20, b.height <= 250
+        else { return nil }
+        return CGRect(x: b.minX, y: primaryHeight - (b.minY + b.height), width: b.width, height: b.height)
+    }
+
     func poll(now: CFTimeInterval) -> [TrackedWindow] {
         let options: CGWindowListOption = [.optionOnScreenOnly, .excludeDesktopElements]
         guard let info = CGWindowListCopyWindowInfo(options, kCGNullWindowID) as? [[String: Any]] else {
@@ -47,10 +63,15 @@ final class WindowTracker {
         let primaryHeight = Self.primaryScreenHeight()
 
         var result: [TrackedWindow] = []
+        var docks: [CGRect] = []
         var nextHistory: [UInt32: History] = [:]
         nextHistory.reserveCapacity(history.count)
 
         for entry in info {
+            if let dock = Self.dockFrame(entry, primaryHeight: primaryHeight) {
+                docks.append(dock)
+                continue
+            }
             guard let layer = (entry[kCGWindowLayer as String] as? NSNumber)?.intValue, layer == 0,
                   let number = (entry[kCGWindowNumber as String] as? NSNumber)?.uint32Value,
                   let pid = (entry[kCGWindowOwnerPID as String] as? NSNumber)?.int32Value,
@@ -104,6 +125,7 @@ final class WindowTracker {
 
         // Windows that disappeared drop out of the history here.
         history = nextHistory
+        dockFrames = docks
         return result
     }
 

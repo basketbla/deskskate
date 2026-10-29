@@ -18,7 +18,27 @@ final class ObstacleManager {
         var stillFrames = 0
     }
 
+    /// Gravity state per obstacle. Missing = falling from rest.
+    private enum Fall {
+        /// Sitting on the surface with this id.
+        case resting(String)
+        /// In the air with this velocity (points/second).
+        case falling(CGVector)
+    }
+
+    private static let gravity: CGFloat = 1900
+    private static let maxFallSpeed: CGFloat = 2500
+    /// Fraction of the mouse's release velocity a thrown obstacle keeps.
+    private static let throwCarry: CGFloat = 0.6
+    /// Floors are surfaces whose normal points at least this much up.
+    private static let floorNormalY: CGFloat = 0.7
+
     private var panels: [ObstaclePanel] = []
+    private var fall: [UUID: Fall] = [:]
+    /// Obstacles that were being dragged last frame; their release starts a throw.
+    private var dragging: Set<UUID> = []
+    /// Every surface's endpoints last frame, by id, to measure how a support moved.
+    private var previousSurfaces: [String: (a: CGPoint, b: CGPoint)] = [:]
     private var motion: [UUID: Motion] = [:]
     private var nextOwnerID = ObstacleManager.firstOwnerID
     private var saveWork: DispatchWorkItem?
@@ -72,6 +92,8 @@ final class ObstacleManager {
         guard let i = panels.firstIndex(where: { $0.obstacleID == id }) else { return }
         let panel = panels.remove(at: i)
         motion[id] = nil
+        fall[id] = nil
+        dragging.remove(id)
         panel.orderOut(nil)
         panel.close()
         save()
@@ -87,6 +109,8 @@ final class ObstacleManager {
         for p in panels { p.orderOut(nil); p.close() }
         panels.removeAll()
         motion.removeAll()
+        fall.removeAll()
+        dragging.removeAll()
         save()
     }
 
@@ -118,7 +142,152 @@ final class ObstacleManager {
         }
     }
 
+    /// Drops, carries and lands obstacles when `AppState.obstacleGravity` is on. Called once
+    /// per frame by the game loop right after it builds `world`. With gravity off it does
+    /// nothing and obstacles stay where they were put (mid-air ones freeze).
+    func applyGravity(dt: Double, world: WorldSnapshot) {
+        defer {
+            var map: [String: (a: CGPoint, b: CGPoint)] = [:]
+            map.reserveCapacity(world.surfaces.count)
+            for s in world.surfaces { map[s.id] = (s.a, s.b) }
+            previousSurfaces = map
+        }
+        guard AppState.shared.obstacleGravity, !AppState.shared.hidden else {
+            fall.removeAll()
+            dragging.removeAll()
+            return
+        }
+        let dt = CGFloat(min(max(dt, 0), 1.0 / 20))
+        guard dt > 0 else { return }
+
+        for panel in panels {
+            let id = panel.obstacleID
+            if panel.isBeingDragged {
+                dragging.insert(id)
+                fall[id] = nil
+                continue
+            }
+            if dragging.remove(id) != nil {
+                fall[id] = .falling(panel.releaseVelocity * Self.throwCarry)
+            }
+            let state = fall[id] ?? .falling(.zero)
+            var frame = panel.obstacleFrame
+
+            switch state {
+            case .resting(let supportID):
+                if let support = world.surface(id: supportID) {
+                    if let prev = previousSurfaces[supportID] {
+                        let d = Self.displacement(support, previous: prev)
+                        frame.origin.x += d.dx
+                        frame.origin.y += d.dy
+                    }
+                    if let y = Self.surfaceY(support, atX: frame.midX) {
+                        frame.origin.y = y
+                        move(panel, to: frame)
+                        continue
+                    }
+                }
+                // Support vanished or slid out from under us: start falling from here.
+                stepFall(panel, frame: frame, velocity: .zero, dt: dt, world: world)
+
+            case .falling(let v):
+                stepFall(panel, frame: frame, velocity: v, dt: dt, world: world)
+            }
+        }
+    }
+
     // MARK: - Private
+
+    /// One step of free fall for `panel` from `frame`: integrate, then land or keep falling.
+    private func stepFall(_ panel: ObstaclePanel, frame start: CGRect, velocity v0: CGVector, dt: CGFloat,
+                      world: WorldSnapshot) {
+        let id = panel.obstacleID
+        var v = v0
+        v.dy = max(v.dy - Self.gravity * dt, -Self.maxFallSpeed)
+        var frame = start
+        frame.origin.x += v.dx * dt
+        frame.origin.y += v.dy * dt
+
+        // Thrown sideways past the edge of every screen: stop at the nearest one's side.
+        if let screen = Self.nearestScreen(toX: frame.midX, in: world.screens),
+           !world.screens.contains(where: { frame.midX >= $0.minX && frame.midX <= $0.maxX }) {
+            frame.origin.x = min(max(frame.minX, screen.minX), max(screen.minX, screen.maxX - frame.width))
+            v.dx = 0
+        }
+
+        if let landing = Self.landing(ownerID: panel.ownerID, x: frame.midX, prevBottom: start.minY,
+                                      newBottom: frame.minY, world: world) {
+            frame.origin.y = landing.y
+            fall[id] = .resting(landing.id)
+            move(panel, to: frame)
+            scheduleSave()
+            return
+        }
+
+        // Fell below the screens: put it back on the ground of the nearest one.
+        if let screen = Self.nearestScreen(toX: frame.midX, in: world.screens), frame.maxY < screen.minY {
+            frame.origin.y = screen.minY
+            frame.origin.x = min(max(frame.minX, screen.minX), max(screen.minX, screen.maxX - frame.width))
+            let groundID = world.surfaces.first {
+                $0.kind == .ground && $0.ownerID == nil && abs($0.a.y - screen.minY) < 1
+                    && frame.midX >= min($0.a.x, $0.b.x) && frame.midX <= max($0.a.x, $0.b.x)
+            }?.id
+            fall[id] = groundID.map { .resting($0) } ?? .falling(.zero)
+            move(panel, to: frame)
+            scheduleSave()
+            return
+        }
+
+        fall[id] = .falling(v)
+        move(panel, to: frame)
+    }
+
+    /// The highest floor-like surface (not one of this obstacle's own) under `x` whose height
+    /// the obstacle's bottom crossed from above this frame.
+    static func landing(ownerID: UInt32, x: CGFloat, prevBottom: CGFloat, newBottom: CGFloat,
+                        world: WorldSnapshot) -> (id: String, y: CGFloat)? {
+        var best: (id: String, y: CGFloat)?
+        for s in world.surfaces {
+            guard s.kind != .wall, s.normal.dy > floorNormalY else { continue }
+            if let owner = s.ownerID, owner == ownerID { continue }
+            guard let y = surfaceY(s, atX: x) else { continue }
+            guard prevBottom >= y - 1, newBottom <= y else { continue }
+            if best == nil || y > best!.y { best = (s.id, y) }
+        }
+        return best
+    }
+
+    /// How a support moved since last frame: `a`'s displacement when it moved rigidly. When its
+    /// ends moved differently (a window resized, or a ledge clipped by a window in front), the
+    /// horizontal part is the smaller of the two ends' so the rider isn't flung sideways.
+    static func displacement(_ s: Surface, previous: (a: CGPoint, b: CGPoint)) -> CGVector {
+        let da = s.a - previous.a, db = s.b - previous.b
+        if abs(da.dx - db.dx) <= 1 { return da }
+        return CGVector(dx: abs(da.dx) < abs(db.dx) ? da.dx : db.dx, dy: da.dy)
+    }
+
+    /// Height of `s` at `x`, or nil when `x` is outside its horizontal span.
+    static func surfaceY(_ s: Surface, atX x: CGFloat) -> CGFloat? {
+        let lo = min(s.a.x, s.b.x), hi = max(s.a.x, s.b.x)
+        guard hi - lo > 0.001, x >= lo, x <= hi else { return nil }
+        let t = (x - s.a.x) / (s.b.x - s.a.x)
+        return s.a.y + t * (s.b.y - s.a.y)
+    }
+
+    static func nearestScreen(toX x: CGFloat, in screens: [CGRect]) -> CGRect? {
+        screens.min { distance(x, $0) < distance(x, $1) }
+    }
+
+    private static func distance(_ x: CGFloat, _ r: CGRect) -> CGFloat {
+        x < r.minX ? r.minX - x : (x > r.maxX ? x - r.maxX : 0)
+    }
+
+    /// Moves the panel so its obstacle box is `frame`; skips sub-pixel no-ops.
+    private func move(_ panel: ObstaclePanel, to frame: CGRect) {
+        let current = panel.obstacleFrame
+        guard abs(current.minX - frame.minX) > 0.01 || abs(current.minY - frame.minY) > 0.01 else { return }
+        panel.setFrameOrigin(NSPoint(x: frame.minX - ObstaclePanel.padding, y: frame.minY - ObstaclePanel.padding))
+    }
 
     private func makePanel(_ model: ObstacleModel) {
         let ownerID = nextOwnerID
@@ -153,7 +322,9 @@ final class ObstacleManager {
     }
 
     /// Debounced save for moves that don't end in our own mouseUp (e.g. screen changes).
-    @objc private func panelMoved(_ note: Notification) {
+    @objc private func panelMoved(_ note: Notification) { scheduleSave() }
+
+    private func scheduleSave() {
         saveWork?.cancel()
         let work = DispatchWorkItem { [weak self] in self?.save() }
         saveWork = work

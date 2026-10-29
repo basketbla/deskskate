@@ -9,6 +9,11 @@ import DeskSkateCore
 /// `state.facing` to land in global AppKit space. Effect particles live in global space.
 final class SkaterRenderer {
 
+    /// While held, the board's wheel midpoint hangs this far below the grab point
+    /// (`state.position`) when the skater is not swinging. Offset the grab point by this on
+    /// release so physics picks up the board where it was drawn.
+    static let heldBoardOffset: CGFloat = 38
+
     // MARK: Palette
 
     private enum Palette {
@@ -64,6 +69,13 @@ final class SkaterRenderer {
     private var bailStarDuration: Double = 1.2
     private var lastHeadWorld: CGPoint?
 
+    // Held: pendulum swing driven by the drag velocity, and the "surprise" marks on grab.
+    private var swingAngle: CGFloat = 0
+    private var swingVelocity: CGFloat = 0
+    private var smoothedDragDX: CGFloat = 0
+    private var surpriseTime: Double = 0
+    private let surpriseDuration: Double = 0.5
+
     // Push cycle (rolling slowly while speeding up).
     private var prevSpeed: CGFloat?
     private var smoothedAccel: CGFloat = 0
@@ -85,6 +97,15 @@ final class SkaterRenderer {
                 if case .bailed(let r) = state.phase { bailStarDuration = max(0.4, r) } else { bailStarDuration = 1.2 }
                 bailStarTime = bailStarDuration
                 spawnDust(state)
+            case .grabbed:
+                bailStarTime = 0
+                surpriseTime = surpriseDuration
+                swingAngle = 0
+                swingVelocity = 0
+                smoothedDragDX = 0
+            case .thrown:
+                bailStarTime = 0
+                surpriseTime = 0
             case .respawned:
                 particles.removeAll()
                 bailStarTime = 0
@@ -103,8 +124,21 @@ final class SkaterRenderer {
         let dt = min(dt, 0.1)
         clock += dt
         bailStarTime = max(0, bailStarTime - dt)
+        surpriseTime = max(0, surpriseTime - dt)
 
         if let s = lastState {
+            // Pendulum: hang opposite the horizontal drag, with a little overshoot.
+            if s.phase == .held {
+                let fdt = CGFloat(dt)
+                smoothedDragDX += (s.velocity.dx - smoothedDragDX) * min(1, fdt * 10)
+                let target = max(-0.6, min(0.6, -smoothedDragDX * 0.0013))
+                let stiffness: CGFloat = 70, damping: CGFloat = 7
+                swingVelocity += ((target - swingAngle) * stiffness - swingVelocity * damping) * fdt
+                swingAngle = max(-0.9, min(0.9, swingAngle + swingVelocity * fdt))
+            } else {
+                swingAngle = 0; swingVelocity = 0; smoothedDragDX = 0
+            }
+
             // Grind sparks, rate scaled by speed.
             if s.phase == .grinding {
                 let speed = Double(s.velocity.length)
@@ -168,12 +202,15 @@ final class SkaterRenderer {
 
         if case .bailed(let remaining) = state.phase {
             drawBail(state, remaining: remaining, base: base, in: ctx)
+        } else if state.phase == .held {
+            drawHeld(state, in: ctx)
         } else {
             drawRiding(state, base: base, in: ctx)
         }
 
         drawFrontParticles(in: ctx)
         drawBailStars(in: ctx)
+        drawSurprise(in: ctx)
         ctx.restoreGState()
     }
 
@@ -502,6 +539,66 @@ final class SkaterRenderer {
         let head = drawFigure(pose, in: ctx)
         ctx.restoreGState()
         lastHeadWorld = head.applying(fig).applying(base)
+    }
+
+    // MARK: - Held
+
+    /// Dangling from the mouse. Local frame: origin at the grab point (neck), y up, +x the
+    /// way he faces; rotated by the pendulum swing, mirrored by `facing`.
+    private func drawHeld(_ state: SkaterState, in ctx: CGContext) {
+        let t = state.phaseTime
+        let idle = CGFloat(sin(t * 2.1)) * 0.04
+        let base = CGAffineTransform(translationX: state.position.x, y: state.position.y)
+            .rotated(by: swingAngle + idle)
+            .scaledBy(x: state.facing < 0 ? -1 : 1, y: 1)
+
+        // Legs pedal together, so the board bobs and wiggles but stays on his feet.
+        let kick = CGFloat(sin(t * 9))
+        var board = BoardPose()
+        board.lift = kick * 1.6
+        board.tilt = -0.2 + kick * 0.09 + swingAngle * 0.25
+        let boardOrigin = CGAffineTransform(translationX: 0, y: -Self.heldBoardOffset)
+        let boardT = boardTransform(board).concatenating(boardOrigin)
+
+        let wave = CGFloat(sin(t * 11))
+        let wave2 = CGFloat(sin(t * 11 + 1.7))
+        let footSpread: CGFloat = 6
+        let pose = Pose(hip: CGPoint(x: 0.5, y: -12.5),
+                        lean: 0.05 * wave,
+                        frontFoot: CGPoint(x: footSpread, y: deckTop).applying(boardT),
+                        backFoot: CGPoint(x: -footSpread, y: deckTop).applying(boardT),
+                        frontHand: CGPoint(x: 9 + 1.5 * wave2, y: 9 + 3 * wave),
+                        backHand: CGPoint(x: -9 - 1.5 * wave, y: 8 - 3 * wave2))
+
+        ctx.saveGState()
+        ctx.concatenate(base)
+        ctx.saveGState()
+        ctx.concatenate(boardOrigin)
+        drawBoard(board, in: ctx)
+        ctx.restoreGState()
+        let head = drawFigure(pose, in: ctx)
+        ctx.restoreGState()
+        lastHeadWorld = head.applying(base)
+    }
+
+    /// Three little lines popping out above the head when he's grabbed.
+    private func drawSurprise(in ctx: CGContext) {
+        guard surpriseTime > 0, let head = lastHeadWorld else { return }
+        let u = CGFloat(1 - surpriseTime / surpriseDuration)       // 0 → 1
+        let fade = min(1, (1 - u) / 0.35)
+        let pop = smooth(min(1, u / 0.25))
+        let angles: [CGFloat] = [CGFloat.pi / 2, CGFloat.pi / 2 + 0.6, CGFloat.pi / 2 - 0.6]
+        let r0: CGFloat = headRadius + 3 + 2 * pop
+        let r1: CGFloat = r0 + 6 * pop
+        let halo = Palette.halo.copy(alpha: 0.88 * fade) ?? Palette.halo
+        let ink = Palette.body.copy(alpha: fade) ?? Palette.body
+        for a in angles {
+            let dir = CGVector(dx: cos(a), dy: sin(a))
+            let inner = head + dir * r0
+            let outer = head + dir * r1
+            stroke(ctx, [inner, outer], width: 2 + haloWidth * 2, color: halo)
+            stroke(ctx, [inner, outer], width: 2, color: ink)
+        }
     }
 
     // MARK: - Particles

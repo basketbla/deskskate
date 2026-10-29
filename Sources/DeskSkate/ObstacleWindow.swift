@@ -14,6 +14,12 @@ final class ObstaclePanel: NSPanel {
     var onFlip: (() -> Void)?
     var onRemove: (() -> Void)?
 
+    /// True between mouseDown and mouseUp on the obstacle; gravity leaves it alone meanwhile.
+    var isBeingDragged = false
+    /// Mouse velocity (points/second) over the last moments of the most recent drag, set on
+    /// mouseUp. Zero when the mouse had stopped before release.
+    var releaseVelocity: CGVector = .zero
+
     /// Transparent margin around the obstacle so its outline/halo isn't clipped.
     static let padding: CGFloat = 5
 
@@ -59,6 +65,10 @@ final class ObstacleView: NSView {
     private var dragStartMouse: NSPoint?
     private var dragStartOrigin: NSPoint = .zero
     private var didDrag = false
+    /// Recent mouse positions during a drag, for the release (throw) velocity.
+    private var dragSamples: [(time: TimeInterval, point: NSPoint)] = []
+    /// Samples older than this before release don't count toward the throw.
+    private static let throwWindow: TimeInterval = 0.08
 
     private var panel: ObstaclePanel? { window as? ObstaclePanel }
 
@@ -82,6 +92,9 @@ final class ObstacleView: NSView {
         dragStartMouse = NSEvent.mouseLocation
         dragStartOrigin = window.frame.origin
         didDrag = false
+        dragSamples = [(event.timestamp, NSEvent.mouseLocation)]
+        panel?.isBeingDragged = true
+        panel?.releaseVelocity = .zero
     }
 
     override func mouseDragged(with event: NSEvent) {
@@ -90,12 +103,26 @@ final class ObstacleView: NSView {
         let origin = NSPoint(x: dragStartOrigin.x + now.x - start.x, y: dragStartOrigin.y + now.y - start.y)
         window.setFrameOrigin(origin)
         didDrag = true
+        dragSamples.append((event.timestamp, now))
+        if dragSamples.count > 8 { dragSamples.removeFirst(dragSamples.count - 8) }
     }
 
     override func mouseUp(with event: NSEvent) {
+        panel?.releaseVelocity = didDrag ? throwVelocity(releaseTime: event.timestamp) : .zero
+        panel?.isBeingDragged = false
         if didDrag { panel?.onDragEnded?() }
         dragStartMouse = nil
         didDrag = false
+        dragSamples.removeAll()
+    }
+
+    /// Average mouse velocity over the last `throwWindow` seconds before release.
+    private func throwVelocity(releaseTime: TimeInterval) -> CGVector {
+        let recent = dragSamples.filter { releaseTime - $0.time <= Self.throwWindow }
+        guard let first = recent.first, let last = recent.last else { return .zero }
+        let dt = last.time - first.time
+        guard dt > 0.005 else { return .zero }
+        return CGVector(dx: (last.point.x - first.point.x) / dt, dy: (last.point.y - first.point.y) / dt)
     }
 
     // MARK: Menu

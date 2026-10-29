@@ -21,12 +21,19 @@ public enum SurfaceBuilder {
     static let screenTolerance: CGFloat = 1
     static let neighbourTolerance: CGFloat = 2
 
-    public static func build(windows: [TrackedWindow], screens: [CGRect], obstacles: [ObstacleModel]) -> WorldSnapshot {
+    /// `docks`: frames of the Dock while it is showing; its top becomes a floor.
+    public static func build(windows: [TrackedWindow], screens: [CGRect], obstacles: [ObstacleModel],
+                             docks: [CGRect] = []) -> WorldSnapshot {
         var surfaces: [Surface] = []
         surfaces.reserveCapacity(windows.count * 2 + screens.count * 3 + obstacles.count * 16)
         appendLedges(windows: windows, screens: screens, into: &surfaces)
         appendScreenSurfaces(screens: screens, into: &surfaces)
         for obstacle in obstacles { surfaces.append(contentsOf: ObstacleGeometry.surfaces(for: obstacle)) }
+        for (i, dock) in docks.enumerated() {
+            surfaces.append(Surface(id: "dock-\(i)", a: CGPoint(x: dock.minX, y: dock.maxY),
+                                    b: CGPoint(x: dock.maxX, y: dock.maxY), kind: .ground,
+                                    oneWay: true, grindable: true))
+        }
         return WorldSnapshot(surfaces: surfaces, screens: screens)
     }
 

@@ -118,8 +118,8 @@ public final class AutoPilot {
         var wantJump = false
 
         switch state.phase {
-        case .bailed:
-            // Lie there until the skater gets back up.
+        case .bailed, .held:
+            // Lie there until the skater gets back up (or the mouse lets go).
             resetGroundPlans()
             samples.removeAll()
         case .airborne:
@@ -150,7 +150,7 @@ public final class AutoPilot {
             switch e {
             case .ollie:
                 crouchReason = nil
-            case .landed, .respawned, .bail:
+            case .landed, .respawned, .bail, .grabbed, .thrown:
                 if case .landed = e { landedTimes.append(time) }
                 airTrickDecided = false
                 airGrindDecided = false

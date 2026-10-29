@@ -10,7 +10,7 @@ No permissions needed: window positions come from the window server, titles are 
 ## Run
 
 ```sh
-scripts/bundle.sh --open   # builds build/DeskSkate.app and launches it (menu bar icon, no Dock icon)
+scripts/bundle.sh --open   # builds DeskSkate.app, installs it to /Applications and launches it
 swift run simcheck         # headless physics scenarios
 ```
 
@@ -18,8 +18,9 @@ swift run simcheck         # headless physics scenarios
 
 - **Autonomous** (default): the skater cruises, ollies onto ledges, flips off ramps and grinds
   rails on its own. After a while on the floor it drops back in from the top of a screen.
-- **Keyboard**: `⌃⌥S` (or the menu) hands the keyboard to the skater. `Esc` or `⌃⌥S` gives it
-  back to the app you were in. Clicking another app also switches back to autonomous.
+- **Keyboard**: `⌃⌥S` (or the menu) hands the keyboard to the skater and shows a controls card
+  (`/` hides it). `Esc` gives the keyboard back to the app you were in. Clicking another app keeps
+  keyboard mode; `⌃⌥S` takes the keys back.
 
 | Key | |
 |---|---|
@@ -28,7 +29,12 @@ swift run simcheck         # headless physics scenarios
 | ↑ / W / F | flip trick (in the air) |
 | ↓ / S | hold to grind on landing |
 | R | respawn at the mouse |
+| / | show / hide the controls card |
 | Esc | back to autonomous |
 | ⌃⌥H | hide / show |
 
+Grab the skater with the mouse to pick him up; drop or throw him onto a window.
+
 Obstacles: drag them anywhere; right-click to flip or remove. They are saved between launches.
+**Obstacle Gravity** in the menu makes them fall onto window tops (and ride the window) or the
+floor. When the Dock slides up, its top is a floor too.
